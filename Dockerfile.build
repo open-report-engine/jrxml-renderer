@@ -1,0 +1,16 @@
+FROM maven:3.9-eclipse-temurin-21 AS builder
+WORKDIR /build
+COPY pom.xml .
+COPY src ./src
+COPY jasperreports-functions-7.0.6.jar /build/
+RUN mvn package -B -DskipTests 2>&1 | tail -5
+
+FROM ghcr.io/open-report-engine/jrxml-renderer:latest
+USER root
+COPY jdk21 /usr/lib/jvm/java-21-openjdk
+COPY --from=builder /build/target/jrxml-renderer.jar /app/jrxml-renderer.jar
+RUN ln -sf /usr/lib/jvm/java-21-openjdk/bin/javac /usr/local/bin/javac && \
+    ln -sf /usr/lib/jvm/java-21-openjdk/bin/java /usr/local/bin/java && \
+    adduser -D -u 1001 jasper 2>/dev/null || true
+USER jasper
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk

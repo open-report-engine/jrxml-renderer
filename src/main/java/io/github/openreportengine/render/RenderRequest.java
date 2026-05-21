@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public class RenderRequest {
     public String jrxml;
+    public String jasperBase64;
     public String format;
     public DataSourceConfig dataSource;
     public JsonNode parameters;
@@ -30,10 +31,16 @@ public class RenderRequest {
         RenderRequest req = new RenderRequest();
 
         JsonNode jrxmlNode = node.get("jrxml");
-        if (jrxmlNode == null || jrxmlNode.asText().isEmpty()) {
-            throw new IllegalArgumentException("jrxml is required");
+        JsonNode jasperNode = node.get("jasperBase64");
+        if ((jrxmlNode == null || jrxmlNode.asText().isEmpty()) && (jasperNode == null || jasperNode.asText().isEmpty())) {
+            throw new IllegalArgumentException("jrxml or jasperBase64 is required");
         }
-        req.jrxml = jrxmlNode.asText();
+        if (jrxmlNode != null) {
+            req.jrxml = jrxmlNode.asText();
+        }
+        if (jasperNode != null) {
+            req.jasperBase64 = jasperNode.asText();
+        }
 
         req.format = node.has("format") ? node.get("format").asText("pdf") : "pdf";
         if (!req.format.equals("pdf") && !req.format.equals("xlsx") && !req.format.equals("docx") && !req.format.equals("csv")) {

@@ -1,2 +1,1 @@
-net.sf.jasperreports.engine.xml.JacksonReportLoader
-com.jaspersoft.jasperreports.legacy.xml.LegacyXmlLoader
+io.github.openreportengine.render.FontInjectingReportLoader

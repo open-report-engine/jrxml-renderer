@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" name="font-test-report" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="822" leftMargin="10" rightMargin="10" topMargin="10" bottomMargin="10" whenNoDataType="AllSectionsNoDetail">
+	<property name="net.sf.jasperreports.default.pdf.font.name" value="Arial"/>
+	<property name="net.sf.jasperreports.default.pdf.encoding" value="Identity-H"/>
+	<title>
+		<band height="40">
+			<staticText>
+				<reportElement x="0" y="0" width="822" height="40"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Тестирование шрифтов в jrxml-renderer]]></text>
+			</staticText>
+		</band>
+	</title>
+	<detail>
+		<band height="25">
+			<staticText>
+				<reportElement x="0" y="0" width="200" height="25"/>
+				<text><![CDATA[Arial]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="200" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[11756 b]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="320" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="440" y="0" width="200" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да (Identity-H)]]></text>
+			</staticText>
+		</band>
+		<band height="25">
+			<staticText>
+				<reportElement x="0" y="0" width="200" height="25"/>
+				<text><![CDATA[Times New Roman]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="200" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[17089 b]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="320" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="440" y="0" width="200" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да (Identity-H)]]></text>
+			</staticText>
+		</band>
+		<band height="25">
+			<staticText>
+				<reportElement x="0" y="0" width="200" height="25"/>
+				<text><![CDATA[Courier New]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="200" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[12635 b]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="320" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="440" y="0" width="200" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да (Identity-H)]]></text>
+			</staticText>
+		</band>
+		<band height="25">
+			<staticText>
+				<reportElement x="0" y="0" width="200" height="25"/>
+				<text><![CDATA[Comic Sans MS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="200" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[11071 b]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="320" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="440" y="0" width="200" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да (Identity-H)]]></text>
+			</staticText>
+		</band>
+		<band height="25">
+			<staticText>
+				<reportElement x="0" y="0" width="200" height="25"/>
+				<text><![CDATA[Georgia]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="200" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[9087 b]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="320" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="440" y="0" width="200" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да (Identity-H)]]></text>
+			</staticText>
+		</band>
+		<band height="25">
+			<staticText>
+				<reportElement x="0" y="0" width="200" height="25"/>
+				<text><![CDATA[Verdana]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="200" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[7180 b]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="320" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="440" y="0" width="200" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да (Identity-H)]]></text>
+			</staticText>
+		</band>
+		<band height="25">
+			<staticText>
+				<reportElement x="0" y="0" width="200" height="25"/>
+				<text><![CDATA[Trebuchet MS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="200" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[9457 b]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="320" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="440" y="0" width="200" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да (Identity-H)]]></text>
+			</staticText>
+		</band>
+		<band height="25">
+			<staticText>
+				<reportElement x="0" y="0" width="200" height="25"/>
+				<text><![CDATA[Impact]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="200" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[9087 b]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="320" y="0" width="120" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="440" y="0" width="200" height="25"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Да (Identity-H)]]></text>
+			</staticText>
+		</band>
+	</detail>
+	<summary>
+		<band height="30">
+			<staticText>
+				<reportElement x="0" y="0" width="822" height="30"/>
+				<textElement textAlignment="Center"><font fontName="Arial" pdfFontName="Arial" pdfEncoding="Identity-H"/></textElement>
+				<text><![CDATA[Сгенерировано jrxml-renderer. Все шрифты работают с кириллицей.]]></text>
+			</staticText>
+		</band>
+	</summary>
+</jasperReport>

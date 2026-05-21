@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" name="form-1" pageWidth="1191" pageHeight="842" orientation="Landscape" columnWidth="1171" leftMargin="10" rightMargin="10" topMargin="10" bottomMargin="10" whenNoDataType="AllSectionsNoDetail">
+	<property name="net.sf.jasperreports.default.pdf.font.name" value="DejaVu Sans"/>
+	<property name="net.sf.jasperreports.default.pdf.encoding" value="Identity-H"/>
+	<property name="net.sf.jasperreports.awt.ignore.missing.font" value="true"/>
+	<field name="inn" class="java.lang.String"/>
+	<field name="org_short_name" class="java.lang.String"/>
+	<field name="has_branches" class="java.lang.Integer"/>
+	<field name="okved" class="java.lang.String"/>
+	<field name="okpd" class="java.lang.String"/>
+	<field name="goz" class="java.lang.Integer"/>
+	<field name="vts" class="java.lang.Integer"/>
+	<field name="eev" class="java.lang.Integer"/>
+	<field name="types_so" class="java.lang.Integer"/>
+	<field name="so" class="java.lang.Integer"/>
+	<field name="types_si" class="java.lang.Integer"/>
+	<field name="si" class="java.lang.Integer"/>
+	<field name="io" class="java.lang.Integer"/>
+	<field name="sk" class="java.lang.Integer"/>
+	<field name="note" class="java.lang.String"/>
+	<variable name="sumEev" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{eev}]]></variableExpression>
+	</variable>
+	<variable name="sumTypesSo" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{types_so}]]></variableExpression>
+	</variable>
+	<variable name="sumSo" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{so}]]></variableExpression>
+	</variable>
+	<variable name="sumTypesSi" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{types_si}]]></variableExpression>
+	</variable>
+	<variable name="sumSi" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{si}]]></variableExpression>
+	</variable>
+	<variable name="sumIo" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{io}]]></variableExpression>
+	</variable>
+	<variable name="sumSk" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{sk}]]></variableExpression>
+	</variable>
+	<title>
+		<band height="40">
+			<textField>
+				<reportElement x="0" y="0" width="1171" height="40"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA["\320\241\320\262\320\265\320\264\320\265\320\275\320\270\321\217 \320\276 \320\264\320\265\321\217\321\202\320\265\320\273\321\214\320\275\320\276\321\201\321\202\320\270 \320\276\321\200\320\263\320\260\320\275\320\270\320\267\320\260\321\206\320\270\320\270 (\320\244\320\276\321\200\320\274\320\260 1)"]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="60">
+			<staticText><reportElement x="0" y="0" width="100" height="60"/><textElement textAlignment="Center"/><text><![CDATA[\320\236\321\200\320\263\320\260\320\275\320\270\320\267\320\260\321\206\320\270\321\217]]></text></staticText>
+			<staticText><reportElement x="100" y="0" width="50" height="60"/><textElement textAlignment="Center"/><text><![CDATA[\320\244\320\270\320\273\320\270\320\260\320\273\321\213 (1/0)]]></text></staticText>
+			<staticText><reportElement x="150" y="0" width="80" height="60"/><textElement textAlignment="Center"/><text><![CDATA[\320\230\320\235\320\235]]></text></staticText>
+			<staticText><reportElement x="230" y="0" width="80" height="60"/><textElement textAlignment="Center"/><text><![CDATA[\320\236\320\232\320\222\320\255\320\224]]></text></staticText>
+			<staticText><reportElement x="310" y="0" width="80" height="60"/><textElement textAlignment="Center"/><text><![CDATA[\320\236\320\232\320\237\320\224 2]]></text></staticText>
+			<staticText><reportElement x="390" y="0" width="40" height="60"/><textElement textAlignment="Center"/><text><![CDATA[\320\223\320\236\320\227]]></text></staticText>
+			<staticText><reportElement x="430" y="0" width="40" height="60"/><textElement textAlignment="Center"/><text><![CDATA[\320\222\320\242\320\241]]></text></staticText>
+			<staticText><reportElement x="470" y="0" width="60" height="60"/><textElement textAlignment="Center"/><text><![CDATA[\320\255\320\225\320\222, \321\210\321\202]]></text></staticText>
+			<staticText><reportElement x="530" y="0" width="60" height="60"/><textElement textAlignment="Center"/><text><![CDATA[\321\202\320\270\320\277\320\276\320\262 \320\241\320\236, \320\265\320\264]]></text></staticText>
+			<staticText><reportElement x="590" y="0" width="60" height="60"/><textElement textAlignment="Center"/><text><![CDATA[\320\241\320\236, \321\210\321\202]]></text></staticText>
+			<staticText><reportElement x="650" y="0" width="60" height="60"/><textElement textAlignment="Center"/><text><![CDATA[\321\202\320\270\320\277\320\276\320\262 \320\241\320\230, \320\265\320\264]]></text></staticText>
+			<staticText><reportElement x="710" y="0" width="60" height="60"/><textElement textAlignment="Center"/><text><![CDATA[\320\241\320\230, \321\210\321\202]]></text></staticText>
+			<staticText><reportElement x="770" y="0" width="60" height="60"/><textElement textAlignment="Center"/><text><![CDATA[\320\230\320\236, \321\210\321\202]]></text></staticText>
+			<staticText><reportElement x="830" y="0" width="60" height="60"/><textElement textAlignment="Center"/><text><![CDATA[\320\241\320\232, \321\210\321\202]]></text></staticText>
+			<staticText><reportElement x="890" y="0" width="281" height="60"/><textElement textAlignment="Center"/><text><![CDATA[\320\237\321\200\320\270\320\274\320\265\321\207\320\260\320\275\320\270\320\265]]></text></staticText>
+			<staticText><reportElement x="470" y="0" width="420" height="20"/><textElement textAlignment="Center"/><text><![CDATA[\320\222\321\213\320\277\321\203\321\201\320\272 \320\270\320\267 \320\277\321\200\320\276\320\270\320\267\320\262\320\276\320\264\321\201\321\202\320\262\320\260]]></text></staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="18">
+			<textField><reportElement x="0" y="0" width="100" height="18"/><textElement/><textFieldExpression><![CDATA[$F{org_short_name}]]></textFieldExpression></textField>
+			<textField><reportElement x="100" y="0" width="50" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA[$F{has_branches}]]></textFieldExpression></textField>
+			<textField><reportElement x="150" y="0" width="80" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA[$F{inn}]]></textFieldExpression></textField>
+			<textField><reportElement x="230" y="0" width="80" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA[$F{okved}]]></textFieldExpression></textField>
+			<textField><reportElement x="310" y="0" width="80" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA[$F{okpd}]]></textFieldExpression></textField>
+			<textField><reportElement x="390" y="0" width="40" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA[$F{goz}]]></textFieldExpression></textField>
+			<textField><reportElement x="430" y="0" width="40" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA[$F{vts}]]></textFieldExpression></textField>
+			<textField><reportElement x="470" y="0" width="60" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA[$F{eev}]]></textFieldExpression></textField>
+			<textField><reportElement x="530" y="0" width="60" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA[$F{types_so}]]></textFieldExpression></textField>
+			<textField><reportElement x="590" y="0" width="60" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA[$F{so}]]></textFieldExpression></textField>
+			<textField><reportElement x="650" y="0" width="60" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA[$F{types_si}]]></textFieldExpression></textField>
+			<textField><reportElement x="710" y="0" width="60" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA[$F{si}]]></textFieldExpression></textField>
+			<textField><reportElement x="770" y="0" width="60" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA[$F{io}]]></textFieldExpression></textField>
+			<textField><reportElement x="830" y="0" width="60" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA[$F{sk}]]></textFieldExpression></textField>
+			<textField><reportElement x="890" y="0" width="281" height="18"/><textElement/><textFieldExpression><![CDATA[$F{note}]]></textFieldExpression></textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="18">
+			<textField><reportElement x="0" y="0" width="100" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA["\320\230\321\202\320\276\320\263\320\276"]]></textFieldExpression></textField>
+			<textField><reportElement x="470" y="0" width="60" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA[$V{sumEev}]]></textFieldExpression></textField>
+			<textField><reportElement x="530" y="0" width="60" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA[$V{sumTypesSo}]]></textFieldExpression></textField>
+			<textField><reportElement x="590" y="0" width="60" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA[$V{sumSo}]]></textFieldExpression></textField>
+			<textField><reportElement x="650" y="0" width="60" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA[$V{sumTypesSi}]]></textFieldExpression></textField>
+			<textField><reportElement x="710" y="0" width="60" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA[$V{sumSi}]]></textFieldExpression></textField>
+			<textField><reportElement x="770" y="0" width="60" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA[$V{sumIo}]]></textFieldExpression></textField>
+			<textField><reportElement x="830" y="0" width="60" height="18"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA[$V{sumSk}]]></textFieldExpression></textField>
+		</band>
+	</summary>
+</jasperReport>

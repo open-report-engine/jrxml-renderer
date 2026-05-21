@@ -43,44 +43,54 @@ public class RenderHandler implements HttpHandler {
 
         exchange.getRequestReceiver().receiveFullBytes((ex, data) -> {
             try {
-                JsonNode req = mapper.readTree(data);
-                RenderRequest request = RenderRequest.fromJson(req);
+                try {
+                    JsonNode req = mapper.readTree(data);
+                    RenderRequest request = RenderRequest.fromJson(req);
 
-                ByteArrayOutputStream baos = renderService.render(request);
+                    ByteArrayOutputStream baos = renderService.render(request);
 
-                String contentType;
-                switch (request.format) {
-                    case "pdf":
-                        contentType = "application/pdf";
-                        break;
-                    case "xlsx":
-                        contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                        break;
-                    case "docx":
-                        contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-                        break;
-                    case "csv":
-                        contentType = "text/csv; charset=utf-8";
-                        break;
-                    default:
-                        contentType = "application/octet-stream";
+                    String contentType;
+                    switch (request.format) {
+                        case "pdf":
+                            contentType = "application/pdf";
+                            break;
+                        case "xlsx":
+                            contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                            break;
+                        case "docx":
+                            contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                            break;
+                        case "csv":
+                            contentType = "text/csv; charset=utf-8";
+                            break;
+                        default:
+                            contentType = "application/octet-stream";
+                    }
+
+                    exchange.setStatusCode(200);
+                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, contentType);
+                    exchange.getResponseHeaders().put(Headers.CONTENT_DISPOSITION,
+                        "attachment; filename=\"report." + request.format + "\"");
+                    exchange.getResponseSender().send(ByteBuffer.wrap(baos.toByteArray()));
+                } catch (Exception e) {
+                    StringWriter sw = new StringWriter();
+                    PrintWriter pw = new PrintWriter(sw);
+                    e.printStackTrace(pw);
+                    String trace = sw.toString();
+                    System.err.println("RENDER ERROR: " + e.getMessage());
+                    System.err.println(trace);
+                    exchange.setStatusCode(500);
+                    exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+                    String escaped = trace.substring(0, Math.min(trace.length(), 2000))
+                        .replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
+                    exchange.getResponseSender().send("{\"error\":\"" + escaped + "\"}");
                 }
-
-                exchange.setStatusCode(200);
-                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, contentType);
-                exchange.getResponseHeaders().put(Headers.CONTENT_DISPOSITION,
-                    "attachment; filename=\"report." + request.format + "\"");
-                exchange.getResponseSender().send(ByteBuffer.wrap(baos.toByteArray()));
             } catch (Exception e) {
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-                String trace = sw.toString().replace("\"", "'").replace("\n", "\\\\n");
-                System.err.println("RENDER ERROR: " + e.getMessage());
+                System.err.println("FATAL RENDER ERROR: " + e.getMessage());
                 e.printStackTrace(System.err);
                 exchange.setStatusCode(500);
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-                exchange.getResponseSender().send("{\"error\":\"" + trace.substring(0, Math.min(trace.length(), 2000)) + "\"}");
+                exchange.getResponseSender().send("{\"error\":\"Fatal error\"}");
             }
         });
     }
