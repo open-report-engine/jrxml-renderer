@@ -1,7 +1,12 @@
 FROM eclipse-temurin:21-jre-alpine
-RUN apk add --no-cache fontconfig ttf-dejavu
-WORKDIR /app
+RUN mkdir -p /usr/share/fonts/custom /fonts && \
+    apk add --no-cache fontconfig ttf-dejavu && \
+    rm -rf /var/cache/apk/* /tmp/*
 COPY target/jrxml-renderer.jar /app/jrxml-renderer.jar
-EXPOSE 8080
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+WORKDIR /app
 ENV PORT=8080
-ENTRYPOINT ["java", "-jar", "/app/jrxml-renderer.jar"]
+EXPOSE 8080
+VOLUME ["/fonts"]
+ENTRYPOINT ["docker-entrypoint.sh"]
