@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>io.github.open-report-engine</groupId>
+  <artifactId>jrxml-renderer</artifactId>
+  <name>JRXML Renderer</name>
+  <version>0.2.0</version>
+  <build>
+    <finalName>jrxml-renderer</finalName>
+    <plugins>
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer>
+                  <mainClass>io.github.openreportengine.App</mainClass>
+                </transformer>
+                <transformer />
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  <properties>
+    <hikari.version>6.2.1</hikari.version>
+    <jackson.version>2.18.3</jackson.version>
+    <clickhouse-jdbc.version>0.5.0</clickhouse-jdbc.version>
+    <poi.version>5.4.0</poi.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <jasperreports.version>6.21.5</jasperreports.version>
+    <logback.version>1.5.17</logback.version>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <postgresql.version>42.7.5</postgresql.version>
+    <undertow.version>2.3.18.Final</undertow.version>
+  </properties>
+</project>
