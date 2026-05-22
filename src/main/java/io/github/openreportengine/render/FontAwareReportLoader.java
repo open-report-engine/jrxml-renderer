@@ -22,9 +22,25 @@ public class FontAwareReportLoader {
         // We pre-set the mapper in context so JacksonUtil.getXmlMapper() returns it.
         XmlMapper xmlMapper = new XmlMapper();
         xmlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        // Also copy the default configuration from JacksonUtil.configureMapper
         xmlMapper.enable(com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT);
         xmlMapper.setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
+        // Register custom serializers/deserializers from JasperReports
+        com.fasterxml.jackson.databind.module.SimpleModule module = new com.fasterxml.jackson.databind.module.SimpleModule();
+        module.addDeserializer(java.awt.Color.class, new net.sf.jasperreports.jackson.util.ColorDeserializer());
+        module.addSerializer(java.awt.Color.class, new net.sf.jasperreports.jackson.util.ColorSerializer());
+        xmlMapper.registerModule(module);
+        // Register component subtypes from context
+        try {
+            net.sf.jasperreports.engine.component.ComponentsEnvironment componentsEnv =
+                net.sf.jasperreports.engine.component.ComponentsEnvironment.getInstance(ctx);
+            for (net.sf.jasperreports.engine.component.ComponentsBundle bundle : componentsEnv.getBundles()) {
+                for (Class<? extends net.sf.jasperreports.engine.component.Component> ct : bundle.getComponentTypes()) {
+                    xmlMapper.registerSubtypes(ct);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("component registration: " + e.getMessage());
+        }
         ctx.setValue("net.sf.jasperreports.jackson.xml.mapper", xmlMapper);
 
         // Step 1: Parse JRXML using the standard JasperReports JRXmlLoader.
