@@ -468,7 +468,7 @@ public class FontAwareReportLoader {
             headerTf.setWidth(colW); headerTf.setHeight(30);
             headerTf.setExpression(new JRDesignExpression("\"Col " + (ci + 1) + "\""));
             headerTf.setBackcolor(java.awt.Color.decode("#BFE1FF"));
-            headerTf.setMode(net.sf.jasperreports.engine.type.FillEnum.SOLID);
+            headerTf.setMode(net.sf.jasperreports.engine.type.ModeEnum.OPAQUE);
             applyFontDefaults(headerTf);
             band.addElement(headerTf);
 
@@ -477,7 +477,7 @@ public class FontAwareReportLoader {
             detailTf.setX(currentX); detailTf.setY(88);
             detailTf.setWidth(colW); detailTf.setHeight(30);
             detailTf.setExpression(new JRDesignExpression("\"data\""));
-            detailTf.setMode(net.sf.jasperreports.engine.type.FillEnum.SOLID);
+            detailTf.setMode(net.sf.jasperreports.engine.type.ModeEnum.OPAQUE);
             applyFontDefaults(detailTf);
             band.addElement(detailTf);
 
