@@ -6,10 +6,6 @@ import net.sf.jasperreports.engine.type.OrientationEnum;
 
 import javax.xml.parsers.*;
 import javax.xml.xpath.*;
-import org.w3c.dom.*;
-
-import java.io.ByteArrayInputStream;
-import java.util.*;
 
 public class FontAwareReportLoader {
 
@@ -305,10 +301,11 @@ public class FontAwareReportLoader {
             if (!(elem instanceof JRDesignTextElement)) continue;
             JRDesignTextElement te = (JRDesignTextElement) elem;
             if (te.getFontName() == null || te.getFontName().isEmpty() ||
-                "Helvetica".equals(te.getFontName()) || "SansSerif".equals(te.getFontName())) {
-                te.setFontName("Arial");
-                te.setPdfFontName("Arial");
-                te.setPdfEncoding("Identity-H");
+                "Helvetica".equals(te.getFontName()) || "SansSerif".equals(te.getFontName()) ||
+                "Arial".equals(te.getFontName())) {
+                te.setFontName(FontDefaults.FAMILY);
+                te.setPdfFontName(FontDefaults.PDF_NAME);
+                te.setPdfEncoding(FontDefaults.PDF_ENCODING);
             }
         }
     }
@@ -371,12 +368,10 @@ public class FontAwareReportLoader {
 
             applyFontFromElement(stEl, tf);
 
-            // Always set Arial + Identity-H on converted staticText.
-            // This is critical: even if JRXML has <font>, Jasper may ignore it
-            // for WinAnsi-encoded text in some versions.
-            tf.setFontName("Arial");
-            tf.setPdfFontName("Arial");
-            tf.setPdfEncoding("Identity-H");
+            // Always set monospaced Cyrillic-capable font on converted staticText.
+            tf.setFontName(FontDefaults.FAMILY);
+            tf.setPdfFontName(FontDefaults.PDF_NAME);
+            tf.setPdfEncoding(FontDefaults.PDF_ENCODING);
 
             Element textEl = getChildElement(stEl, "text");
             if (textEl != null) {
@@ -419,10 +414,10 @@ public class FontAwareReportLoader {
 
             applyFontFromElement(tfEl, tf);
 
-            // Always set Arial + Identity-H on textField.
-            tf.setFontName("Arial");
-            tf.setPdfFontName("Arial");
-            tf.setPdfEncoding("Identity-H");
+            // Always set monospaced Cyrillic-capable font on textField.
+            tf.setFontName(FontDefaults.FAMILY);
+            tf.setPdfFontName(FontDefaults.PDF_NAME);
+            tf.setPdfEncoding(FontDefaults.PDF_ENCODING);
 
             Element exprEl = getChildElement(tfEl, "textFieldExpression");
             if (exprEl != null) {
