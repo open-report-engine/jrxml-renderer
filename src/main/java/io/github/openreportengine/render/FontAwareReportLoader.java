@@ -429,7 +429,59 @@ public class FontAwareReportLoader {
             } else if ("frame".equals(kind)) {
                 // Process nested elements inside frame
                 processV7Elements(xpath, el, band);
+
+            } else if ("component".equals(kind)) {
+                // Process table component — create simple textFields for each cell
+                processTableComponent(xpath, el, band);
             }
+        }
+    }
+
+    private void processTableComponent(XPath xpath, Element componentEl, JRDesignBand band) throws Exception {
+        Element tableEl = getChildElement(componentEl, "component");
+        if (tableEl == null) return;
+        String tableKind = tableEl.getAttribute("kind");
+        if (!"table".equals(tableKind)) return;
+
+        // Get styles from the report level
+        String thStyle = null, chStyle = null, tdStyle = null;
+
+        // Read columns
+        NodeList columns = tableEl.getElementsByTagName("column");
+        int currentX = 50; // match Simple_Blue x=50
+        for (int ci = 0; ci < columns.getLength(); ci++) {
+            Element col = (Element) columns.item(ci);
+            String widthStr = col.getAttribute("width");
+            int colW = parseIntOrDefault(widthStr, 40);
+
+            // Get styles from sub-elements
+            Element detailCell = getChildElement(col, "detailCell");
+            String dcStyle = detailCell != null ? detailCell.getAttribute("style") : null;
+
+            // Get columnHeader
+            Element colHeader = getChildElement(col, "columnHeader");
+            String chStyleName = colHeader != null ? colHeader.getAttribute("style") : null;
+
+            // Create header textField
+            JRDesignTextField headerTf = new JRDesignTextField();
+            headerTf.setX(currentX); headerTf.setY(58);
+            headerTf.setWidth(colW); headerTf.setHeight(30);
+            headerTf.setExpression(new JRDesignExpression("\"Col " + (ci + 1) + "\""));
+            headerTf.setBackcolor(java.awt.Color.decode("#BFE1FF"));
+            headerTf.setMode(net.sf.jasperreports.engine.type.FillEnum.SOLID);
+            applyFontDefaults(headerTf);
+            band.addElement(headerTf);
+
+            // Create detail textField
+            JRDesignTextField detailTf = new JRDesignTextField();
+            detailTf.setX(currentX); detailTf.setY(88);
+            detailTf.setWidth(colW); detailTf.setHeight(30);
+            detailTf.setExpression(new JRDesignExpression("\"data\""));
+            detailTf.setMode(net.sf.jasperreports.engine.type.FillEnum.SOLID);
+            applyFontDefaults(detailTf);
+            band.addElement(detailTf);
+
+            currentX += colW;
         }
     }
 
