@@ -105,6 +105,62 @@ public class FontAwareReportLoader {
             design.addField(field);
         }
 
+        // Process variables
+        NodeList varNodes = (NodeList) xpath.evaluate("/jasperReport/variable", doc, XPathConstants.NODESET);
+        for (int i = 0; i < varNodes.getLength(); i++) {
+            Element ve = (Element) varNodes.item(i);
+            JRDesignVariable var = new JRDesignVariable();
+            String vname = ve.getAttribute("name");
+            var.setName(vname);
+            String vclass = ve.getAttribute("class");
+            if (vclass != null && !vclass.isEmpty()) {
+                try {
+                    var.setValueClass(Class.forName(vclass));
+                } catch (ClassNotFoundException e) {
+                    var.setValueClassName(vclass);
+                }
+            }
+            String calc = ve.getAttribute("calculation");
+            if ("Sum".equals(calc)) var.setCalculation(net.sf.jasperreports.engine.type.CalculationEnum.SUM);
+            else if ("Count".equals(calc)) var.setCalculation(net.sf.jasperreports.engine.type.CalculationEnum.COUNT);
+            else if ("Average".equals(calc)) var.setCalculation(net.sf.jasperreports.engine.type.CalculationEnum.AVERAGE);
+            else if ("First".equals(calc)) var.setCalculation(net.sf.jasperreports.engine.type.CalculationEnum.FIRST);
+            else if ("DistinctCount".equals(calc)) var.setCalculation(net.sf.jasperreports.engine.type.CalculationEnum.DISTINCT_COUNT);
+            else if ("Lowest".equals(calc)) var.setCalculation(net.sf.jasperreports.engine.type.CalculationEnum.LOWEST);
+            else if ("Highest".equals(calc)) var.setCalculation(net.sf.jasperreports.engine.type.CalculationEnum.HIGHEST);
+            else if ("StandardDeviation".equals(calc)) var.setCalculation(net.sf.jasperreports.engine.type.CalculationEnum.STANDARD_DEVIATION);
+            else if ("Variance".equals(calc)) var.setCalculation(net.sf.jasperreports.engine.type.CalculationEnum.VARIANCE);
+            else var.setCalculation(net.sf.jasperreports.engine.type.CalculationEnum.NOTHING);
+
+            Element varExpr = getChildElement(ve, "variableExpression");
+            if (varExpr != null) {
+                String exprText = varExpr.getTextContent();
+                if (exprText != null) {
+                    exprText = exprText.trim();
+                    if (exprText.startsWith("<![CDATA[")) {
+                        exprText = exprText.substring(9, exprText.length() - 3);
+                    }
+                }
+                if (exprText != null && !exprText.isEmpty()) {
+                    var.setExpression(new JRDesignExpression(exprText));
+                }
+            }
+            Element initExpr = getChildElement(ve, "initialValueExpression");
+            if (initExpr != null) {
+                String exprText = initExpr.getTextContent();
+                if (exprText != null) {
+                    exprText = exprText.trim();
+                    if (exprText.startsWith("<![CDATA[")) {
+                        exprText = exprText.substring(9, exprText.length() - 3);
+                    }
+                }
+                if (exprText != null && !exprText.isEmpty()) {
+                    var.setInitialValueExpression(new JRDesignExpression(exprText));
+                }
+            }
+            design.addVariable(var);
+        }
+
         // Process queryString
         NodeList queryNodes = (NodeList) xpath.evaluate("/jasperReport/queryString", doc, XPathConstants.NODESET);
         if (queryNodes.getLength() > 0) {
