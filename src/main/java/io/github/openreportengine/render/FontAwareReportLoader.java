@@ -209,6 +209,14 @@ public class FontAwareReportLoader {
             processTextFields(xpath, bandEl, band);
 
             System.err.println("  " + bandName + " elements: " + band.getElements().length);
+            if ("columnHeader".equals(bandName) || "detail".equals(bandName)) {
+                for (JRElement el : band.getElements()) {
+                    if (el instanceof JRDesignTextElement) {
+                        JRDesignTextElement te = (JRDesignTextElement) el;
+                        System.err.println("    fontName=" + te.getFontName() + " pdfFontName=" + te.getPdfFontName() + " pdfEnc=" + te.getPdfEncoding());
+                    }
+                }
+            }
 
             // Set band on design (JasperDesign has these methods directly)
             if ("detail".equals(bandName)) {
