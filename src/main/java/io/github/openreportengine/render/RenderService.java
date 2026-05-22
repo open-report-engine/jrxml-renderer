@@ -218,6 +218,17 @@ public class RenderService {
                         } catch (Exception e) {
                             System.err.println("pdfFontName replace: " + e.getMessage());
                         }
+                        // Also ensure pdfEncoding is Identity-H for Cyrillic support
+                        try {
+                            java.lang.reflect.Field encField = text.getClass().getDeclaredField("pdfEncoding");
+                            encField.setAccessible(true);
+                            Object curEnc = encField.get(text);
+                            if (curEnc == null || "CP1252".equals(curEnc) || "WinAnsiEncoding".equals(curEnc) || "".equals(curEnc)) {
+                                encField.set(text, "Identity-H");
+                            }
+                        } catch (Exception e) {
+                            System.err.println("pdfEncoding replace: " + e.getMessage());
+                        }
                     }
                 }
             }
