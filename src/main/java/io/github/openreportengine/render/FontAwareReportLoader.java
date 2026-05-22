@@ -355,6 +355,15 @@ public class FontAwareReportLoader {
 
             applyFontFromElement(stEl, tf);
 
+            // Force Arial + Identity-H on converted staticText to ensure Cyrillic support.
+            // applyFontFromElement may have set nothing if <font> is absent in JRXML.
+            if (tf.getFontName() == null || tf.getFontName().isEmpty() ||
+                "Helvetica".equals(tf.getFontName()) || "SansSerif".equals(tf.getFontName())) {
+                tf.setFontName("Arial");
+                tf.setPdfFontName("Arial");
+                tf.setPdfEncoding("Identity-H");
+            }
+
             Element textEl = getChildElement(stEl, "text");
             if (textEl != null) {
                 String txt = textEl.getTextContent();
