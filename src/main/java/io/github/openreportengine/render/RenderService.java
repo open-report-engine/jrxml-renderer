@@ -208,7 +208,8 @@ public class RenderService {
                     if (element instanceof net.sf.jasperreports.engine.JRPrintText) {
                         net.sf.jasperreports.engine.JRPrintText text = (net.sf.jasperreports.engine.JRPrintText) element;
                         String fn = text.getOwnFontName();
-                        if (fn == null || "Helvetica".equals(fn) || "SansSerif".equals(fn) || "DejaVu Sans".equals(fn) || "Arial".equals(fn)) {
+                        System.err.println("  element fontName='" + fn + "' pdf='" + text.getOwnPdfFontName() + "' enc='" + text.getOwnPdfEncoding() + "'");
+                        if (fn == null || fn.isEmpty() || "Helvetica".equals(fn) || "SansSerif".equals(fn) || "DejaVu Sans".equals(fn) || "Arial".equals(fn)) {
                             text.setFontName(FontDefaults.FAMILY);
                         }
                         String pdf = text.getOwnPdfFontName();
