@@ -195,14 +195,22 @@ public class FontAwareReportLoader {
             }
 
             Element sectionEl = (Element) bandNodes.item(0);
-            // The XPath returns e.g. <title> which contains <band>
-            // Find the <band> child inside
+            // Find the inner element container.
+            // Two formats:
+            //   1) <title><band height="...">...elements...</band></title>
+            //   2) <title height="...">...elements directly...</title>  (Jasper 7+)
             Element bandEl = getChildElement(sectionEl, "band");
-            if (bandEl == null) continue;
+            if (bandEl == null) {
+                // Try new format — section has height directly
+                bandEl = sectionEl;
+            }
 
             int bandHeight = parseIntOrDefault(bandEl.getAttribute("height"), 30);
             JRDesignBand band = new JRDesignBand();
             band.setHeight(bandHeight);
+
+            // Process v7-style elements (<element kind="staticText"> ...)
+            processV7Elements(xpath, bandEl, band);
 
             // Process staticText elements
             processStaticTexts(xpath, bandEl, band);
@@ -329,6 +337,121 @@ public class FontAwareReportLoader {
             }
         }
         return null;
+    }
+
+    private void processV7Elements(XPath xpath, Element parentEl, JRDesignBand band) throws Exception {
+        NodeList children = parentEl.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if (child.getNodeType() != Node.ELEMENT_NODE) continue;
+            Element el = (Element) child;
+            String kind = el.getAttribute("kind");
+            if (kind == null || kind.isEmpty()) continue;
+
+            String nodeName = child.getNodeName();
+            int colon = nodeName.indexOf(':');
+            String localName = colon >= 0 ? nodeName.substring(colon + 1) : nodeName;
+            if (!"element".equals(localName)) continue;
+
+            int x = parseIntOrDefault(el.getAttribute("x"), 0);
+            int y = parseIntOrDefault(el.getAttribute("y"), 0);
+            int w = parseIntOrDefault(el.getAttribute("width"), 100);
+            int h = parseIntOrDefault(el.getAttribute("height"), 20);
+
+            if ("staticText".equals(kind)) {
+                // Convert v7 staticText to textField with constant expression
+                JRDesignTextField tf = new JRDesignTextField();
+                tf.setX(x); tf.setY(y); tf.setWidth(w); tf.setHeight(h);
+
+                String txt = getChildTextContent(el, "text");
+                if (txt != null && !txt.isEmpty()) {
+                    txt = txt.replace("\"", "\\\"");
+                    tf.setExpression(new JRDesignExpression("\"" + txt + "\""));
+                }
+
+                // Font attributes on the element itself
+                String fn = el.getAttribute("fontName");
+                if (fn != null && !fn.isEmpty()) tf.setFontName(fn);
+                String pdf = el.getAttribute("pdfFontName");
+                if (pdf != null && !pdf.isEmpty()) tf.setPdfFontName(pdf);
+                String enc = el.getAttribute("pdfEncoding");
+                if (enc != null && !enc.isEmpty()) tf.setPdfEncoding(enc);
+
+                // Foreground color
+                String fc = el.getAttribute("forecolor");
+                if (fc != null && !fc.isEmpty()) {
+                    try {
+                        tf.setForecolor(java.awt.Color.decode(fc));
+                    } catch (Exception e) {}
+                }
+
+                // Apply font defaults
+                applyFontDefaults(tf);
+
+                band.addElement(tf);
+
+            } else if ("textField".equals(kind)) {
+                JRDesignTextField tf = new JRDesignTextField();
+                tf.setX(x); tf.setY(y); tf.setWidth(w); tf.setHeight(h);
+
+                String exprText = getChildTextContent(el, "expression");
+                if (exprText != null && !exprText.isEmpty()) {
+                    tf.setExpression(new JRDesignExpression(exprText));
+                }
+
+                String fn = el.getAttribute("fontName");
+                if (fn != null && !fn.isEmpty()) tf.setFontName(fn);
+                String pdf = el.getAttribute("pdfFontName");
+                if (pdf != null && !pdf.isEmpty()) tf.setPdfFontName(pdf);
+                String enc = el.getAttribute("pdfEncoding");
+                if (enc != null && !enc.isEmpty()) tf.setPdfEncoding(enc);
+
+                String fc = el.getAttribute("forecolor");
+                if (fc != null && !fc.isEmpty()) {
+                    try {
+                        tf.setForecolor(java.awt.Color.decode(fc));
+                    } catch (Exception e) {}
+                }
+
+                applyFontDefaults(tf);
+
+                band.addElement(tf);
+
+            } else if ("line".equals(kind)) {
+                JRDesignLine line = new JRDesignLine();
+                line.setX(x); line.setY(y); line.setWidth(w); line.setHeight(h);
+                String dir = el.getAttribute("direction");
+                if ("TopDown".equals(dir)) line.setDirection(net.sf.jasperreports.engine.type.LineDirectionEnum.TOP_DOWN);
+                else if ("BottomUp".equals(dir)) line.setDirection(net.sf.jasperreports.engine.type.LineDirectionEnum.BOTTOM_UP);
+                else line.setDirection(net.sf.jasperreports.engine.type.LineDirectionEnum.TOP_DOWN);
+                band.addElement(line);
+
+            } else if ("frame".equals(kind)) {
+                // Process nested elements inside frame
+                processV7Elements(xpath, el, band);
+            }
+        }
+    }
+
+    private String getChildTextContent(Element parent, String name) {
+        Element child = getChildElement(parent, name);
+        if (child == null) return null;
+        String txt = child.getTextContent();
+        if (txt == null) return null;
+        txt = txt.trim();
+        if (txt.startsWith("<![CDATA[")) {
+            txt = txt.substring(9, txt.length() - 3);
+        }
+        return txt;
+    }
+
+    private void applyFontDefaults(JRDesignTextElement te) {
+        if (te.getFontName() == null || te.getFontName().isEmpty() ||
+            "Helvetica".equals(te.getFontName()) || "SansSerif".equals(te.getFontName())) {
+            te.setFontName(FontDefaults.FAMILY);
+            te.setPdfFontName(FontDefaults.PDF_NAME);
+            te.setPdfEncoding(FontDefaults.PDF_ENCODING);
+        }
     }
 
     private int countStaticTexts(XPath xpath, Element bandEl) throws Exception {
