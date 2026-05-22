@@ -53,11 +53,53 @@ public class FontAwareReportLoader {
             throw e;
         }
 
-        // Step 2: Apply font fallback — replace default/Helvetica with DejaVu Sans Mono
+        // Step 2: Fix band origins on section-based bands (detail, groupHeader/Footer).
+        // JacksonReportLoader with @JsonMerge does not set JROrigin on bands inside
+        // JRDesignSection. Without origin, fillReport cannot map data to $F{} fields.
+        resetSectionOrigins(design);
+
+        // Step 3: Apply font fallback — replace default/Helvetica with DejaVu Sans Mono
         applyArialFallback(design);
 
         System.err.println("FontAwareReportLoader: fonts applied to " + design.getName());
         return design;
+    }
+
+    private void resetSectionOrigins(JasperDesign design) {
+        try {
+            java.lang.reflect.Method getDetail = design.getClass().getMethod("getDetailSection");
+            setSectionOrigin((JRSection) getDetail.invoke(design), net.sf.jasperreports.engine.type.BandTypeEnum.DETAIL);
+        } catch (Exception e) {
+            System.err.println("detail origin: " + e.getMessage());
+        }
+        // Group sections are accessed via getGroupsList()
+        try {
+            for (JRGroup group : design.getGroupsList()) {
+                if (group instanceof JRDesignGroup) {
+                    JRDesignGroup dg = (JRDesignGroup) group;
+                    setSectionOrigin(dg.getGroupHeaderSection(), net.sf.jasperreports.engine.type.BandTypeEnum.GROUP_HEADER);
+                    setSectionOrigin(dg.getGroupFooterSection(), net.sf.jasperreports.engine.type.BandTypeEnum.GROUP_FOOTER);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("group origin: " + e.getMessage());
+        }
+    }
+
+    private void setSectionOrigin(JRSection section, net.sf.jasperreports.engine.type.BandTypeEnum type) {
+        if (section == null) return;
+        JROrigin origin = new JROrigin(type);
+        for (JRBand band : section.getBands()) {
+            if (band instanceof JRDesignBand) {
+                try {
+                    java.lang.reflect.Method setOrigin = JRDesignBand.class.getDeclaredMethod("setOrigin", JROrigin.class);
+                    setOrigin.setAccessible(true);
+                    setOrigin.invoke(band, origin);
+                } catch (Exception e) {
+                    System.err.println("setOrigin error: " + e.getMessage());
+                }
+            }
+        }
     }
 
     private void applyArialFallback(JasperDesign design) {
