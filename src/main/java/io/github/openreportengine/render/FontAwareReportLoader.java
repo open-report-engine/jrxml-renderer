@@ -14,6 +14,7 @@ import java.util.*;
 public class FontAwareReportLoader {
 
     private final List<JRDesignBand> detailBands = new ArrayList<>();
+    private final java.util.Map<String, String> fieldClasses = new java.util.HashMap<>();
 
     private static class FontInfo {
         String fontName;
@@ -102,6 +103,7 @@ public class FontAwareReportLoader {
                     field.setValueClassName(fclass);
                 }
             }
+            fieldClasses.put(fname, fclass);
             design.addField(field);
         }
 
@@ -417,6 +419,11 @@ public class FontAwareReportLoader {
 
             applyFontFromElement(tfEl, tf);
 
+            // Always set Arial + Identity-H on textField.
+            tf.setFontName("Arial");
+            tf.setPdfFontName("Arial");
+            tf.setPdfEncoding("Identity-H");
+
             Element exprEl = getChildElement(tfEl, "textFieldExpression");
             if (exprEl != null) {
                 String exprText = exprEl.getTextContent();
@@ -427,7 +434,11 @@ public class FontAwareReportLoader {
                     }
                 }
                 if (exprText != null && !exprText.isEmpty()) {
-                    JRDesignExpression expr = new JRDesignExpression(exprText);
+                    // Wrap numeric fields in String() to force Identity-H encoding.
+                    // Jasper 7.x encodes Integer/Long fields as WinAnsi even with
+                    // pdfFontName=Arial/Identity-H. String() forces UTF-16 path.
+                    String wrapped = wrapNumericExpression(exprText);
+                    JRDesignExpression expr = new JRDesignExpression(wrapped);
                     tf.setExpression(expr);
                 }
             }
@@ -446,6 +457,29 @@ public class FontAwareReportLoader {
         String methodName = "get" + Character.toUpperCase(name.charAt(0)) + name.substring(1);
         java.lang.reflect.Method m = design.getClass().getMethod(methodName);
         return m.invoke(design);
+    }
+
+    private String wrapNumericExpression(String expr) {
+        // Detect simple $F{field} and wrap in String() if field is numeric
+        // Also detect $V{variable} (summary variables)
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+            "\\$F\\{(\\w+)\\}|\\$V\\{(\\w+)\\}").matcher(expr);
+        StringBuffer sb = new StringBuffer();
+        while (m.find()) {
+            String fieldName = m.group(1) != null ? m.group(1) : m.group(2);
+            String fclass = fieldClasses.get(fieldName);
+            if (fclass != null && (fclass.contains("Integer") || fclass.contains("Long") ||
+                fclass.contains("Short") || fclass.contains("Byte") ||
+                fclass.contains("BigDecimal") || fclass.contains("BigInteger") ||
+                fclass.contains("Double") || fclass.contains("Float") ||
+                fclass.contains("Number"))) {
+                m.appendReplacement(sb, "String($0)");
+            } else {
+                m.appendReplacement(sb, "$0");
+            }
+        }
+        m.appendTail(sb);
+        return sb.toString();
     }
 
     private int parseIntOrDefault(String value, int def) {
