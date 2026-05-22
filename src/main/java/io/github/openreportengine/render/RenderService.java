@@ -30,10 +30,10 @@ public class RenderService {
 
     static {
         System.setProperty("net.sf.jasperreports.awt.ignore.missing.font", "true");
-        System.setProperty("net.sf.jasperreports.default.pdf.font.name", "Arial");
-        System.setProperty("net.sf.jasperreports.default.pdf.encoding", "Identity-H");
+        System.setProperty("net.sf.jasperreports.default.pdf.font.name", FontDefaults.FAMILY);
+        System.setProperty("net.sf.jasperreports.default.pdf.encoding", FontDefaults.PDF_ENCODING);
         System.setProperty("net.sf.jasperreports.export.pdf.font.dir", "/app/");
-        System.setProperty("net.sf.jasperreports.export.pdf.font.Arial", "/app/Arial.ttf");
+        System.setProperty("net.sf.jasperreports.export.pdf.font." + FontDefaults.FAMILY, "/app/DejaVuSansMono.ttf");
 
         registerFontsFromDirs("/fonts/", "/app/");
 
@@ -212,8 +212,8 @@ public class RenderService {
                             java.lang.reflect.Field pdfField = text.getClass().getDeclaredField("pdfFontName");
                             pdfField.setAccessible(true);
                             Object cur = pdfField.get(text);
-                            if (cur == null || "Helvetica".equals(cur) || "SansSerif".equals(cur) || "DejaVu Sans".equals(cur)) {
-                                pdfField.set(text, "Arial");
+                            if (cur == null || "Helvetica".equals(cur) || "SansSerif".equals(cur) || "DejaVu Sans".equals(cur) || "Arial".equals(cur)) {
+                                pdfField.set(text, FontDefaults.PDF_NAME);
                             }
                         } catch (Exception e) {
                             System.err.println("pdfFontName replace: " + e.getMessage());
