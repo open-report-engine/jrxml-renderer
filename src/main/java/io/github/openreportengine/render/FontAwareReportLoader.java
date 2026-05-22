@@ -4,6 +4,9 @@ import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.design.*;
 import net.sf.jasperreports.engine.xml.JRXmlLoader;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
 import java.io.ByteArrayInputStream;
 import java.util.*;
 
@@ -12,12 +15,19 @@ public class FontAwareReportLoader {
     private final List<JRDesignBand> detailBands = new ArrayList<>();
 
     public JasperDesign loadDesign(JasperReportsContext ctx, byte[] data) throws Exception {
+        // Step 0: Configure Jackson XmlMapper to ignore unknown properties.
+        // JacksonReportLoader (via JacksonUtil) uses XmlMapper to deserialize JRXML.
+        // Fields like "height" on sections (JRDesignSection), "class" on fields,
+        // "variableExpression" on variables cause failures if not ignored.
+        // We pre-set the mapper in context so JacksonUtil.getXmlMapper() returns it.
+        XmlMapper xmlMapper = new XmlMapper();
+        xmlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        // Also copy the default configuration from JacksonUtil.configureMapper
+        xmlMapper.enable(com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT);
+        xmlMapper.setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
+        ctx.setValue("net.sf.jasperreports.jackson.xml.mapper", xmlMapper);
+
         // Step 1: Parse JRXML using the standard JasperReports JRXmlLoader.
-        // This handles all v7 components (tables, frames, etc.) correctly.
-        // JRXmlLoader internally uses ServiceLoader to find ReportLoader
-        // implementations (JacksonReportLoader for v7, LegacyXmlLoader for old).
-        // Our FontAwareReportLoader is NOT registered as ReportLoader,
-        // so no recursion occurs.
         JasperDesign design;
         try {
             design = JRXmlLoader.load(ctx, new ByteArrayInputStream(data));
