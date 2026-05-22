@@ -6,6 +6,10 @@ import net.sf.jasperreports.engine.type.OrientationEnum;
 
 import javax.xml.parsers.*;
 import javax.xml.xpath.*;
+import org.w3c.dom.*;
+
+import java.io.ByteArrayInputStream;
+import java.util.*;
 
 public class FontAwareReportLoader {
 
