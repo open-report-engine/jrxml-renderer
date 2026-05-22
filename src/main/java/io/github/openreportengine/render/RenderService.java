@@ -6,11 +6,11 @@ import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.export.JRCsvExporter;
 import net.sf.jasperreports.engine.export.ooxml.JRDocxExporter;
+import net.sf.jasperreports.engine.export.ooxml.JRXlsxExporter;
 import net.sf.jasperreports.engine.util.JRLoader;
-import net.sf.jasperreports.engine.xml.ReportLoader;
 import net.sf.jasperreports.functions.FunctionsBundle;
 import net.sf.jasperreports.pdf.JRPdfExporter;
-import net.sf.jasperreports.poi.export.JRXlsExporter;
+
 import net.sf.jasperreports.export.SimpleExporterInput;
 import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
 import net.sf.jasperreports.export.SimpleWriterExporterOutput;
@@ -32,12 +32,13 @@ public class RenderService {
         System.setProperty("net.sf.jasperreports.awt.ignore.missing.font", "true");
         System.setProperty("net.sf.jasperreports.default.pdf.font.name", "Arial");
         System.setProperty("net.sf.jasperreports.default.pdf.encoding", "Identity-H");
-        // Don't force embed - rely on system font
         System.setProperty("net.sf.jasperreports.export.pdf.font.dir", "/app/");
         System.setProperty("net.sf.jasperreports.export.pdf.font.Arial", "/app/Arial.ttf");
-        
-        // Register all fonts from /fonts/ and /app/ directories
+
         registerFontsFromDirs("/fonts/", "/app/");
+
+        System.setProperty("net.sf.jasperreports.extension.registry.factory.fonts", "net.sf.jasperreports.engine.fonts.FontExtensionsRegistry");
+        System.setProperty("net.sf.jasperreports.extension.fonts", "/app/fonts.xml,/app/arial-fonts.xml");
 
         Logger.getLogger("").setLevel(Level.OFF);
     }
@@ -57,15 +58,13 @@ public class RenderService {
 
     private static void registerFont(java.io.File fontFile) {
         try {
-            // Register as AWT font
             java.awt.Font awtFont = java.awt.Font.createFont(java.awt.Font.TRUETYPE_FONT, fontFile);
             java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(awtFont);
-            
-            // Register for iText PDF
+
             com.lowagie.text.pdf.BaseFont.createFont(
                 fontFile.getAbsolutePath(), "Identity-H", com.lowagie.text.pdf.BaseFont.EMBEDDED);
             com.lowagie.text.FontFactory.register(fontFile.getAbsolutePath());
-            
+
             System.err.println("Font registered: " + awtFont.getFontName() + " (" + fontFile + ")");
         } catch (Exception e) {
             System.err.println("Font registration failed: " + fontFile + " - " + e.getMessage());
@@ -76,6 +75,7 @@ public class RenderService {
         try {
             JasperReportsContext ctx = DefaultJasperReportsContext.getInstance();
 
+            String requestSql = null;
             JasperReport jasperReport;
             Map<String, Object> params = convertParameters(request.parameters);
 
@@ -86,29 +86,59 @@ public class RenderService {
                 System.err.println("Report loaded: " + jasperReport.getName());
             } else {
                 byte[] data = request.jrxml.getBytes("UTF-8");
-                ServiceLoader<ReportLoader> loader = ServiceLoader.load(ReportLoader.class);
-                JasperDesign design = null;
-                int count = 0;
 
-                for (ReportLoader reportLoader : loader) {
-                    count++;
-                    System.err.println("Trying ReportLoader: " + reportLoader.getClass().getName());
-                    Optional<JasperDesign> opt = reportLoader.loadReport(ctx, data);
-                    if (opt.isPresent()) {
-                        design = opt.get();
-                        System.err.println("  -> SUCCESS");
-                        break;
-                    }
-                    System.err.println("  -> EMPTY");
+                // Try FontAwareReportLoader first (DOM parser with Arial support)
+                JasperDesign design = null;
+                try {
+                    FontAwareReportLoader fontLoader = new FontAwareReportLoader();
+                    design = fontLoader.loadDesign(ctx, data);
+                    System.err.println("FontAwareReportLoader: design loaded");
+                } catch (Exception e) {
+                    System.err.println("FontAwareReportLoader failed: " + e.getMessage());
                 }
 
-                System.err.println("ReportLoaders tried: " + count);
+                // Fallback to LegacyXmlLoader if FontAware failed
+                if (design == null) {
+                    System.err.println("Falling back to LegacyXmlLoader");
+                    String xmlStr = new String(data, "UTF-8");
+                    xmlStr = xmlStr.replaceAll("<queryString[^>]*>.*?</queryString>", "");
+                    xmlStr = xmlStr.replaceAll("<font[^>]*/>", "");
+                    com.jaspersoft.jasperreports.legacy.xml.LegacyXmlLoader legacy = new com.jaspersoft.jasperreports.legacy.xml.LegacyXmlLoader();
+                    java.util.Optional<JasperDesign> opt = legacy.loadReport(ctx, xmlStr.getBytes("UTF-8"));
+                    if (opt.isPresent()) {
+                        design = opt.get();
+                    }
+                }
 
                 if (design == null) {
-                    throw new JRException("Unable to load report: no ReportLoader accepted the format");
+                    throw new JRException("Unable to load report: no loader accepted the format");
                 }
 
                 System.err.println("Design loaded: " + design.getName());
+
+                // Extract SQL from original JRXML
+                if (request.dataSource != null && request.dataSource.isSql()) {
+                    try {
+                        String xmlStr = new String(data, "UTF-8");
+                        System.err.println("Searching SQL in XML (" + xmlStr.length() + " bytes)");
+                        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                            "<queryString[^>]*>(.*?)</queryString>",
+                            java.util.regex.Pattern.DOTALL).matcher(xmlStr);
+                        if (m.find()) {
+                            String raw = m.group(1).trim();
+                            System.err.println("Found raw SQL: " + raw.substring(0, Math.min(raw.length(), 80)));
+                            if (raw.startsWith("<![CDATA[")) {
+                                raw = raw.substring(9, raw.length() - 3);
+                            }
+                            if (!raw.isEmpty()) {
+                                requestSql = raw.trim();
+                                System.err.println("Extracted SQL (" + requestSql.length() + " chars)");
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.err.println("SQL extraction error: " + e.getMessage());
+                    }
+                }
 
                 SimpleJasperReportsContext functionCtx = new SimpleJasperReportsContext(ctx);
                 registerFunctions(functionCtx);
@@ -119,14 +149,47 @@ public class RenderService {
             }
 
             Connection connection = null;
+            JRDataSource dataSource = null;
+
             if (request.dataSource != null && request.dataSource.isSql()) {
                 DataSource ds = DataSourceFactory.create(request.dataSource);
                 connection = ds.getConnection();
+
+                String sql = requestSql;
+                if (sql == null) {
+                    net.sf.jasperreports.engine.JRQuery queryObj = jasperReport.getQuery();
+                    if (queryObj != null) sql = queryObj.getText();
+                }
+                if (sql != null && !sql.isEmpty()) {
+                    sql = substituteParameters(sql, params);
+                    System.err.println("Executing SQL: " + sql.substring(0, Math.min(sql.length(), 100)));
+                    java.sql.Statement stmt = connection.createStatement();
+                    java.sql.ResultSet rs = stmt.executeQuery(sql);
+                    dataSource = new net.sf.jasperreports.engine.JRResultSetDataSource(rs);
+                }
+            } else if (request.inlineData != null && request.inlineData.isArray()) {
+                dataSource = new net.sf.jasperreports.engine.JRDataSource() {
+                    int idx = -1;
+                    public boolean next() { idx++; return idx < request.inlineData.size(); }
+                    public Object getFieldValue(net.sf.jasperreports.engine.JRField field) {
+                        com.fasterxml.jackson.databind.JsonNode row = request.inlineData.get(idx);
+                        com.fasterxml.jackson.databind.JsonNode val = row.get(field.getName());
+                        if (val == null) return null;
+                        if (val.isTextual()) return val.asText();
+                        if (val.isInt()) return val.asInt();
+                        if (val.isLong()) return val.asLong();
+                        if (val.isDouble()) return val.asDouble();
+                        if (val.isBoolean()) return val.asBoolean();
+                        return val.asText();
+                    }
+                };
             }
 
             JasperPrint jasperPrint;
             try {
-                if (connection != null) {
+                if (dataSource != null) {
+                    jasperPrint = JasperFillManager.fillReport(jasperReport, params, dataSource);
+                } else if (connection != null) {
                     jasperPrint = JasperFillManager.fillReport(jasperReport, params, connection);
                 } else {
                     jasperPrint = JasperFillManager.fillReport(jasperReport, params, new JREmptyDataSource());
@@ -137,30 +200,28 @@ public class RenderService {
 
             System.err.println("Report filled, pages: " + jasperPrint.getPages().size());
 
-            // Replace font on all print elements
+            // Post-fill: ensure pdfFontName is Arial for fields still using default font.
+            // This is a safety net — FontAwareReportLoader already set fonts in design,
+            // but some Jasper versions may reset fonts during compilation.
+            // We only touch pdfFontName (not fontName) to avoid breaking text metrics.
             for (net.sf.jasperreports.engine.JRPrintPage page : jasperPrint.getPages()) {
                 for (net.sf.jasperreports.engine.JRPrintElement element : page.getElements()) {
                     if (element instanceof net.sf.jasperreports.engine.JRPrintText) {
                         net.sf.jasperreports.engine.JRPrintText text = (net.sf.jasperreports.engine.JRPrintText) element;
-                        if (text.getFontName() == null || "Helvetica".equals(text.getFontName())) {
-                            try {
-                                java.lang.reflect.Field nameField = text.getClass().getDeclaredField("fontName");
-                                nameField.setAccessible(true);
-                                nameField.set(text, "DejaVu Sans");
-                            } catch (Exception e) {
-                                System.err.println("Font name replace error: " + e.getMessage());
+                        try {
+                            java.lang.reflect.Field pdfField = text.getClass().getDeclaredField("pdfFontName");
+                            pdfField.setAccessible(true);
+                            Object cur = pdfField.get(text);
+                            if (cur == null || "Helvetica".equals(cur) || "SansSerif".equals(cur) || "DejaVu Sans".equals(cur)) {
+                                pdfField.set(text, "Arial");
                             }
-                            try {
-                                java.lang.reflect.Field pdfField = text.getClass().getDeclaredField("pdfFontName");
-                                pdfField.setAccessible(true);
-                                pdfField.set(text, "DejaVu Sans");
-                            } catch (Exception e) {
-                                System.err.println("PdfFont name replace error: " + e.getMessage());
-                            }
+                        } catch (Exception e) {
+                            System.err.println("pdfFontName replace: " + e.getMessage());
                         }
                     }
                 }
             }
+            System.err.println("Post-fill pdfFontName check done");
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             switch (request.format) {
@@ -171,7 +232,7 @@ public class RenderService {
                     pdfExporter.exportReport();
                     break;
                 case "xlsx":
-                    JRXlsExporter xlsxExporter = new JRXlsExporter();
+                    JRXlsxExporter xlsxExporter = new JRXlsxExporter();
                     xlsxExporter.setExporterInput(new SimpleExporterInput(jasperPrint));
                     xlsxExporter.setExporterOutput(new SimpleOutputStreamExporterOutput(baos));
                     xlsxExporter.exportReport();
@@ -197,6 +258,28 @@ public class RenderService {
             System.err.println("RENDER ERROR: " + sw.toString());
             throw e;
         }
+    }
+
+    private String substituteParameters(String sql, Map<String, Object> params) {
+        if (params == null || params.isEmpty()) return sql;
+        String result = sql;
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            String placeholder = "$P{" + entry.getKey() + "}";
+            Object value = entry.getValue();
+            String strValue;
+            if (value == null) {
+                strValue = "NULL";
+            } else if (value instanceof Number) {
+                strValue = value.toString();
+            } else {
+                strValue = "'" + value.toString().replace("'", "''") + "'";
+            }
+            result = result.replace(placeholder, strValue);
+            // Also replace $P!{} syntax (inject directly without quotes)
+            String injectPlaceholder = "$P!{" + entry.getKey() + "}";
+            result = result.replace(injectPlaceholder, value != null ? value.toString() : "");
+        }
+        return result;
     }
 
     private void registerFunctions(SimpleJasperReportsContext ctx) {
