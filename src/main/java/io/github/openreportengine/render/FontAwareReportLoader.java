@@ -208,7 +208,7 @@ public class FontAwareReportLoader {
             // Process textField elements
             processTextFields(xpath, bandEl, band);
 
-            System.err.println("  " + bandName + " elements: " + band.getElements().length);
+            System.err.println("  " + bandName + " elements: " + band.getElements().length + " (staticTexts=" + countStaticTexts(xpath, bandEl) + ")");
             if ("columnHeader".equals(bandName) || "detail".equals(bandName)) {
                 for (JRElement el : band.getElements()) {
                     if (el instanceof JRDesignTextElement) {
@@ -326,6 +326,20 @@ public class FontAwareReportLoader {
             }
         }
         return null;
+    }
+
+    private int countStaticTexts(XPath xpath, Element bandEl) throws Exception {
+        int count = 0;
+        NodeList children = bandEl.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if (child.getNodeType() != Node.ELEMENT_NODE) continue;
+            String nodeName = child.getNodeName();
+            int colon = nodeName.indexOf(':');
+            String localName = colon >= 0 ? nodeName.substring(colon + 1) : nodeName;
+            if ("staticText".equals(localName)) count++;
+        }
+        return count;
     }
 
     private void processStaticTexts(XPath xpath, Element bandEl, JRDesignBand band) throws Exception {
