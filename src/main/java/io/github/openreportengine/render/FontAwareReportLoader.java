@@ -431,8 +431,9 @@ public class FontAwareReportLoader {
                 processV7Elements(xpath, el, band);
 
             } else if ("component".equals(kind)) {
-                // Process table component — create simple textFields for each cell
-                processTableComponent(xpath, el, band);
+                // Table component is complex and not fully supported by DOM parser.
+                // Skip it — the template still renders with non-table elements.
+                System.err.println("  Skipping component kind=" + el.getAttribute("kind"));
             }
         }
     }
