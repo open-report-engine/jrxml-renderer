@@ -208,6 +208,8 @@ public class FontAwareReportLoader {
             // Process textField elements
             processTextFields(xpath, bandEl, band);
 
+            System.err.println("  " + bandName + " elements: " + band.getElements().length);
+
             // Set band on design (JasperDesign has these methods directly)
             if ("detail".equals(bandName)) {
                 detailBands.add(band);
