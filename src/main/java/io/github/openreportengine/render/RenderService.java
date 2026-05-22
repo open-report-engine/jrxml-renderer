@@ -201,25 +201,36 @@ public class RenderService {
 
             System.err.println("Report filled, pages: " + jasperPrint.getPages().size());
 
-            // Post-fill: ensure pdfFontName is Arial for fields still using default font.
-            // This is a safety net — FontAwareReportLoader already set fonts in design,
-            // but some Jasper versions may reset fonts during compilation.
-            // We only touch pdfFontName (not fontName) to avoid breaking text metrics.
+            // Post-fill: ensure fontName and pdfFontName are set to DejaVu Sans Mono.
+            // This ensures staticText elements (which were NOT converted to textField)
+            // also get proper Cyrillic-capable font.
             for (net.sf.jasperreports.engine.JRPrintPage page : jasperPrint.getPages()) {
                 for (net.sf.jasperreports.engine.JRPrintElement element : page.getElements()) {
                     if (element instanceof net.sf.jasperreports.engine.JRPrintText) {
                         net.sf.jasperreports.engine.JRPrintText text = (net.sf.jasperreports.engine.JRPrintText) element;
+                        // Replace fontName (not just pdfFontName) to force DejaVu Sans Mono
+                        try {
+                            java.lang.reflect.Field fnField = text.getClass().getDeclaredField("fontName");
+                            fnField.setAccessible(true);
+                            Object curFn = fnField.get(text);
+                            if (curFn == null || "Helvetica".equals(curFn) || "SansSerif".equals(curFn) || "DejaVu Sans".equals(curFn) || "Arial".equals(curFn)) {
+                                fnField.set(text, FontDefaults.FAMILY);
+                            }
+                        } catch (Exception e) {
+                            System.err.println("fontName replace: " + e.getMessage());
+                        }
+                        // Replace pdfFontName
                         try {
                             java.lang.reflect.Field pdfField = text.getClass().getDeclaredField("pdfFontName");
                             pdfField.setAccessible(true);
-                            Object cur = pdfField.get(text);
-                            if (cur == null || "Helvetica".equals(cur) || "SansSerif".equals(cur) || "DejaVu Sans".equals(cur) || "Arial".equals(cur)) {
+                            Object curPdf = pdfField.get(text);
+                            if (curPdf == null || "Helvetica".equals(curPdf) || "SansSerif".equals(curPdf) || "DejaVu Sans".equals(curPdf) || "Arial".equals(curPdf)) {
                                 pdfField.set(text, FontDefaults.PDF_NAME);
                             }
                         } catch (Exception e) {
                             System.err.println("pdfFontName replace: " + e.getMessage());
                         }
-                        // Also ensure pdfEncoding is Identity-H for Cyrillic support
+                        // Replace pdfEncoding to Identity-H
                         try {
                             java.lang.reflect.Field encField = text.getClass().getDeclaredField("pdfEncoding");
                             encField.setAccessible(true);
@@ -233,7 +244,7 @@ public class RenderService {
                     }
                 }
             }
-            System.err.println("Post-fill pdfFontName check done");
+            System.err.println("Post-fill font replacement done");
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             switch (request.format) {
