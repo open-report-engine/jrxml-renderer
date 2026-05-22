@@ -460,26 +460,21 @@ public class FontAwareReportLoader {
     }
 
     private String wrapNumericExpression(String expr) {
-        // Detect simple $F{field} and wrap in String() if field is numeric
-        // Also detect $V{variable} (summary variables)
+        // Only wrap simple $F{field} or $V{var} expressions (no concatenation)
         java.util.regex.Matcher m = java.util.regex.Pattern.compile(
-            "\\$F\\{(\\w+)\\}|\\$V\\{(\\w+)\\}").matcher(expr);
-        StringBuffer sb = new StringBuffer();
-        while (m.find()) {
-            String fieldName = m.group(1) != null ? m.group(1) : m.group(2);
-            String fclass = fieldClasses.get(fieldName);
+            "^\\$[FV]\\{(\\w+)\\}$").matcher(expr.trim());
+        if (m.find()) {
+            String name = m.group(1);
+            String fclass = fieldClasses.get(name);
             if (fclass != null && (fclass.contains("Integer") || fclass.contains("Long") ||
                 fclass.contains("Short") || fclass.contains("Byte") ||
                 fclass.contains("BigDecimal") || fclass.contains("BigInteger") ||
                 fclass.contains("Double") || fclass.contains("Float") ||
                 fclass.contains("Number"))) {
-                m.appendReplacement(sb, "String.valueOf($0)");
-            } else {
-                m.appendReplacement(sb, "$0");
+                return "String.valueOf(" + expr.trim() + ")";
             }
         }
-        m.appendTail(sb);
-        return sb.toString();
+        return expr;
     }
 
     private int parseIntOrDefault(String value, int def) {
