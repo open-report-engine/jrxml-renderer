@@ -35,6 +35,9 @@ public class RenderService {
         System.setProperty("net.sf.jasperreports.export.pdf.font.dir", "/app/");
         System.setProperty("net.sf.jasperreports.export.pdf.font." + FontDefaults.FAMILY, "/app/DejaVuSansMono.ttf");
 
+        // Use iText 7-based PDF producer for better box/border support
+        System.setProperty("net.sf.jasperreports.pdf.producer.lib7", "true");
+
         registerFontsFromDirs("/fonts/", "/app/");
 
         System.setProperty("net.sf.jasperreports.extension.registry.factory.fonts", "net.sf.jasperreports.engine.fonts.FontExtensionsRegistry");

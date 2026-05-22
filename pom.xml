@@ -42,6 +42,11 @@
         </dependency>
         <dependency>
             <groupId>net.sf.jasperreports</groupId>
+            <artifactId>jasperreports-pdf-lib7</artifactId>
+            <version>${jasperreports.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.sf.jasperreports</groupId>
             <artifactId>jasperreports-excel-poi</artifactId>
             <version>${jasperreports.version}</version>
         </dependency>
