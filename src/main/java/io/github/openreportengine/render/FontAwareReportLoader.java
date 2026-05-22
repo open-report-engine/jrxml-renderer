@@ -329,17 +329,21 @@ public class FontAwareReportLoader {
             if (!"staticText".equals(localName)) continue;
 
             Element stEl = (Element) child;
-            JRDesignStaticText st = new JRDesignStaticText();
+
+            // Convert staticText to textField with constant expression.
+            // This ensures text is rendered through Jasper's Identity-H/UTF-16 path,
+            // supporting Cyrillic and custom fonts correctly, instead of WinAnsi/Helvetica.
+            JRDesignTextField tf = new JRDesignTextField();
 
             Element re = getChildElement(stEl, "reportElement");
             if (re != null) {
-                st.setX(parseIntOrDefault(re.getAttribute("x"), 0));
-                st.setY(parseIntOrDefault(re.getAttribute("y"), 0));
-                st.setWidth(parseIntOrDefault(re.getAttribute("width"), 100));
-                st.setHeight(parseIntOrDefault(re.getAttribute("height"), 20));
+                tf.setX(parseIntOrDefault(re.getAttribute("x"), 0));
+                tf.setY(parseIntOrDefault(re.getAttribute("y"), 0));
+                tf.setWidth(parseIntOrDefault(re.getAttribute("width"), 100));
+                tf.setHeight(parseIntOrDefault(re.getAttribute("height"), 20));
             }
 
-            applyFontFromElement(stEl, st);
+            applyFontFromElement(stEl, tf);
 
             Element textEl = getChildElement(stEl, "text");
             if (textEl != null) {
@@ -349,11 +353,13 @@ public class FontAwareReportLoader {
                     if (txt.startsWith("<![CDATA[")) {
                         txt = txt.substring(9, txt.length() - 3);
                     }
-                    st.setText(txt);
+                    txt = txt.replace("\"", "\\\"");
+                    JRDesignExpression expr = new JRDesignExpression("\"" + txt + "\"");
+                    tf.setExpression(expr);
                 }
             }
 
-            band.addElement(st);
+            band.addElement(tf);
         }
     }
 
