@@ -473,7 +473,7 @@ public class FontAwareReportLoader {
                 fclass.contains("BigDecimal") || fclass.contains("BigInteger") ||
                 fclass.contains("Double") || fclass.contains("Float") ||
                 fclass.contains("Number"))) {
-                m.appendReplacement(sb, "String($0)");
+                m.appendReplacement(sb, "String.valueOf($0)");
             } else {
                 m.appendReplacement(sb, "$0");
             }
