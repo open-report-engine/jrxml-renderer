@@ -369,14 +369,12 @@ public class FontAwareReportLoader {
 
             applyFontFromElement(stEl, tf);
 
-            // Force Arial + Identity-H on converted staticText to ensure Cyrillic support.
-            // applyFontFromElement may have set nothing if <font> is absent in JRXML.
-            if (tf.getFontName() == null || tf.getFontName().isEmpty() ||
-                "Helvetica".equals(tf.getFontName()) || "SansSerif".equals(tf.getFontName())) {
-                tf.setFontName("Arial");
-                tf.setPdfFontName("Arial");
-                tf.setPdfEncoding("Identity-H");
-            }
+            // Always set Arial + Identity-H on converted staticText.
+            // This is critical: even if JRXML has <font>, Jasper may ignore it
+            // for WinAnsi-encoded text in some versions.
+            tf.setFontName("Arial");
+            tf.setPdfFontName("Arial");
+            tf.setPdfEncoding("Identity-H");
 
             Element textEl = getChildElement(stEl, "text");
             if (textEl != null) {
