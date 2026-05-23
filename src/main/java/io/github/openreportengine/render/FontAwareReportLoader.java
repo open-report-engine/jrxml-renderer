@@ -12,8 +12,6 @@ import java.util.*;
 
 public class FontAwareReportLoader {
 
-    private final List<JRDesignBand> detailBands = new ArrayList<>();
-
     public JasperDesign loadDesign(JasperReportsContext ctx, byte[] data) throws Exception {
         // Step 0: Configure Jackson XmlMapper to ignore unknown properties.
         // JacksonReportLoader (via JacksonUtil) uses XmlMapper to deserialize JRXML.
@@ -116,8 +114,25 @@ public class FontAwareReportLoader {
             if (band == null) continue;
             applyArialToBand(band);
         }
-        for (JRDesignBand band : detailBands) {
-            applyArialToBand(band);
+        // Process group header/footer section bands
+        try {
+            for (JRGroup group : design.getGroupsList()) {
+                if (group instanceof JRDesignGroup) {
+                    JRDesignGroup dg = (JRDesignGroup) group;
+                    if (dg.getGroupHeaderSection() != null) {
+                        for (JRBand b : dg.getGroupHeaderSection().getBands()) {
+                            applyArialToBand((JRDesignBand) b);
+                        }
+                    }
+                    if (dg.getGroupFooterSection() != null) {
+                        for (JRBand b : dg.getGroupFooterSection().getBands()) {
+                            applyArialToBand((JRDesignBand) b);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("group bands font fallback: " + e.getMessage());
         }
 
         // Also process detail section bands
@@ -165,4 +180,5 @@ public class FontAwareReportLoader {
         java.lang.reflect.Method m = design.getClass().getMethod(methodName);
         return m.invoke(design);
     }
+
 }

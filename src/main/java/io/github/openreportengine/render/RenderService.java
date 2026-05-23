@@ -21,6 +21,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.Connection;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
+import java.util.zip.DataFormatException;
 import java.util.*;
 import java.util.Base64;
 import java.util.logging.Level;
@@ -117,23 +120,29 @@ public class RenderService {
 
                 System.err.println("Design loaded: " + design.getName());
 
-                // Extract SQL from original JRXML
-                if (request.dataSource != null && request.dataSource.isSql()) {
+                // Collect all data sources
+                List<RenderRequest.DataSourceConfig> allDataSources = new ArrayList<>();
+                if (request.dataSource != null) {
+                    allDataSources.add(request.dataSource);
+                }
+                if (request.dataSources != null) {
+                    allDataSources.addAll(request.dataSources);
+                }
+
+                // Extract SQL from original JRXML (for backward compat)
+                if (!allDataSources.isEmpty()) {
                     try {
                         String xmlStr = new String(data, "UTF-8");
-                        System.err.println("Searching SQL in XML (" + xmlStr.length() + " bytes)");
                         java.util.regex.Matcher m = java.util.regex.Pattern.compile(
                             "<queryString[^>]*>(.*?)</queryString>",
                             java.util.regex.Pattern.DOTALL).matcher(xmlStr);
                         if (m.find()) {
                             String raw = m.group(1).trim();
-                            System.err.println("Found raw SQL: " + raw.substring(0, Math.min(raw.length(), 80)));
                             if (raw.startsWith("<![CDATA[")) {
                                 raw = raw.substring(9, raw.length() - 3);
                             }
                             if (!raw.isEmpty()) {
                                 requestSql = raw.trim();
-                                System.err.println("Extracted SQL (" + requestSql.length() + " chars)");
                             }
                         }
                     } catch (Exception e) {
@@ -152,21 +161,43 @@ public class RenderService {
             Connection connection = null;
             JRDataSource dataSource = null;
 
-            if (request.dataSource != null && request.dataSource.isSql()) {
-                DataSource ds = DataSourceFactory.create(request.dataSource);
-                connection = ds.getConnection();
+            // Handle multiple data sources
+            List<RenderRequest.DataSourceConfig> allDataSources = new ArrayList<>();
+            if (request.dataSource != null) {
+                allDataSources.add(request.dataSource);
+            }
+            if (request.dataSources != null) {
+                allDataSources.addAll(request.dataSources);
+            }
 
-                String sql = requestSql;
-                if (sql == null) {
-                    net.sf.jasperreports.engine.JRQuery queryObj = jasperReport.getQuery();
-                    if (queryObj != null) sql = queryObj.getText();
-                }
-                if (sql != null && !sql.isEmpty()) {
-                    sql = substituteParameters(sql, params);
-                    System.err.println("Executing SQL: " + sql.substring(0, Math.min(sql.length(), 100)));
-                    java.sql.Statement stmt = connection.createStatement();
-                    java.sql.ResultSet rs = stmt.executeQuery(sql);
-                    dataSource = new net.sf.jasperreports.engine.JRResultSetDataSource(rs);
+            if (!allDataSources.isEmpty()) {
+                // Use the first SQL data source as the main data source for JasperReports
+                RenderRequest.DataSourceConfig mainSource = allDataSources.get(0);
+                if (mainSource.isSql()) {
+                    DataSource ds = DataSourceFactory.create(mainSource);
+                    connection = ds.getConnection();
+
+                    // Execute all extra queries and inject results as parameters
+                    for (int i = 1; i < allDataSources.size(); i++) {
+                        RenderRequest.DataSourceConfig extraSource = allDataSources.get(i);
+                        if (extraSource.isSql() && extraSource.query != null) {
+                            executeExtraQuery(extraSource, params, connection);
+                        }
+                    }
+
+                    // Execute main query
+                    String sql = requestSql;
+                    if (sql == null) {
+                        net.sf.jasperreports.engine.JRQuery queryObj = jasperReport.getQuery();
+                        if (queryObj != null) sql = queryObj.getText();
+                    }
+                    if (sql != null && !sql.isEmpty()) {
+                        sql = substituteParameters(sql, params);
+                        System.err.println("Executing SQL: " + sql.substring(0, Math.min(sql.length(), 100)));
+                        java.sql.Statement stmt = connection.createStatement();
+                        java.sql.ResultSet rs = stmt.executeQuery(sql);
+                        dataSource = new net.sf.jasperreports.engine.JRResultSetDataSource(rs);
+                    }
                 }
             } else if (request.inlineData != null && request.inlineData.isArray()) {
                 dataSource = new net.sf.jasperreports.engine.JRDataSource() {
@@ -232,6 +263,16 @@ public class RenderService {
                     pdfExporter.setExporterInput(new SimpleExporterInput(jasperPrint));
                     pdfExporter.setExporterOutput(new SimpleOutputStreamExporterOutput(baos));
                     pdfExporter.exportReport();
+
+                    // Post-process: balance q/Q operators in PDF content streams.
+                    // JasperReports/iText sometimes produces unbalanced graphics state
+                    // operators, which causes Adobe Acrobat to reject the file.
+                    {
+                        byte[] raw = baos.toByteArray();
+                        byte[] fixed = balanceQOperators(raw);
+                        baos.reset();
+                        baos.write(fixed);
+                    }
                     break;
                 case "xlsx":
                     JRXlsxExporter xlsxExporter = new JRXlsxExporter();
@@ -313,6 +354,123 @@ public class RenderService {
             System.err.println("Failed to register functions: " + e.getMessage());
             e.printStackTrace(System.err);
         }
+    }
+
+    private void executeExtraQuery(RenderRequest.DataSourceConfig source, Map<String, Object> params, Connection existingConn) throws Exception {
+        if (source.query == null) return;
+        String sql = substituteParameters(source.query, params);
+        System.err.println("Executing extra query: " + sql.substring(0, Math.min(sql.length(), 100)));
+        java.sql.Statement stmt = existingConn.createStatement();
+        java.sql.ResultSet rs = stmt.executeQuery(sql);
+        java.sql.ResultSetMetaData meta = rs.getMetaData();
+        int cols = meta.getColumnCount();
+        if (rs.next()) {
+            for (int i = 1; i <= cols; i++) {
+                String colName = meta.getColumnName(i);
+                Object val = rs.getObject(i);
+                if (val != null && !params.containsKey(colName)) {
+                    params.put(colName, val);
+                    System.err.println("  param " + colName + " = " + val);
+                }
+            }
+        }
+        rs.close();
+        stmt.close();
+    }
+
+    private byte[] balanceQOperators(byte[] pdfBytes) throws java.io.IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream(pdfBytes.length + 100);
+        int pos = 0;
+
+        java.util.regex.Pattern streamRe = java.util.regex.Pattern.compile(
+            "stream\\n(.+?)\\nendstream", java.util.regex.Pattern.DOTALL);
+        String text = new String(pdfBytes, "ISO-8859-1");
+        java.util.regex.Matcher m = streamRe.matcher(text);
+
+        while (m.find()) {
+            out.write(pdfBytes, pos, m.start(1) - pos - 7); // -7 for "stream\n"
+            out.write("stream\n".getBytes("ISO-8859-1"));
+
+            String rawContent = m.group(1);
+            byte[] rawBytes = rawContent.getBytes("ISO-8859-1");
+            byte[] decompressed;
+
+            try {
+                java.util.zip.Inflater inflater = new java.util.zip.Inflater();
+                inflater.setInput(rawBytes);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream(rawBytes.length * 2);
+                byte[] buf = new byte[4096];
+                int len;
+                while ((len = inflater.inflate(buf)) > 0) {
+                    baos.write(buf, 0, len);
+                }
+                inflater.end();
+                decompressed = baos.toByteArray();
+            } catch (java.util.zip.DataFormatException e) {
+                // Not a compressed stream, write as-is
+                out.write(rawBytes);
+                out.write("\nendstream".getBytes("ISO-8859-1"));
+                pos = m.end();
+                continue;
+            }
+
+            String decText = new String(decompressed, "ISO-8859-1");
+            String balanced;
+
+            if (decText.contains("BT")) {
+                balanced = balanceContent(decText);
+            } else {
+                balanced = decText;
+            }
+
+            byte[] balancedBytes = balanced.getBytes("ISO-8859-1");
+            java.util.zip.Deflater deflater = new java.util.zip.Deflater();
+            deflater.setInput(balancedBytes);
+            deflater.finish();
+            ByteArrayOutputStream compressedOut = new ByteArrayOutputStream(balancedBytes.length);
+            byte[] buf = new byte[4096];
+            while (!deflater.finished()) {
+                int len = deflater.deflate(buf);
+                compressedOut.write(buf, 0, len);
+            }
+            deflater.end();
+            byte[] compressed = compressedOut.toByteArray();
+
+            out.write(compressed);
+            out.write("\nendstream".getBytes("ISO-8859-1"));
+            pos = m.end();
+        }
+
+        if (pos < pdfBytes.length) {
+            out.write(pdfBytes, pos, pdfBytes.length - pos);
+        }
+
+        return out.toByteArray();
+    }
+
+    private String balanceContent(String content) {
+        int qCount = 0;
+        int QCount = 0;
+        for (int i = 0; i < content.length(); i++) {
+            char c = content.charAt(i);
+            if (c == 'q' && (i == 0 || content.charAt(i - 1) <= ' ')) {
+                qCount++;
+            } else if (c == 'Q' && (i == 0 || content.charAt(i - 1) <= ' ')) {
+                QCount++;
+            }
+        }
+        if (qCount == QCount) return content;
+        StringBuilder sb = new StringBuilder(content);
+        if (qCount > QCount) {
+            for (int i = 0; i < qCount - QCount; i++) {
+                sb.append('\n').append('Q');
+            }
+        } else {
+            for (int i = 0; i < QCount - qCount; i++) {
+                sb.insert(0, "q\n");
+            }
+        }
+        return sb.toString();
     }
 
     private Map<String, Object> convertParameters(JsonNode params) {
