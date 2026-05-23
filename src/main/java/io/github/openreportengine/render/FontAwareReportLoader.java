@@ -82,6 +82,19 @@ public class FontAwareReportLoader {
         } catch (Exception e) {
             System.err.println("group origin: " + e.getMessage());
         }
+        // Summary is a direct band, not a section — need to set its origin too
+        try {
+            java.lang.reflect.Method getSummary = design.getClass().getMethod("getSummary");
+            JRDesignBand summaryBand = (JRDesignBand) getSummary.invoke(design);
+            if (summaryBand != null) {
+                JROrigin origin = new JROrigin(net.sf.jasperreports.engine.type.BandTypeEnum.SUMMARY);
+                java.lang.reflect.Method setOrigin = JRDesignBand.class.getDeclaredMethod("setOrigin", JROrigin.class);
+                setOrigin.setAccessible(true);
+                setOrigin.invoke(summaryBand, origin);
+            }
+        } catch (Exception e) {
+            System.err.println("summary origin: " + e.getMessage());
+        }
     }
 
     private void setSectionOrigin(JRSection section, net.sf.jasperreports.engine.type.BandTypeEnum type) {

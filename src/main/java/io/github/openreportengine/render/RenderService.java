@@ -3,7 +3,8 @@ package io.github.openreportengine.render;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.openreportengine.datasource.DataSourceFactory;
 import net.sf.jasperreports.engine.*;
-import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.design.*;
+import net.sf.jasperreports.engine.type.BandTypeEnum;
 import net.sf.jasperreports.engine.export.JRCsvExporter;
 import net.sf.jasperreports.engine.export.ooxml.JRDocxExporter;
 import net.sf.jasperreports.engine.export.ooxml.JRXlsxExporter;
@@ -96,6 +97,9 @@ public class RenderService {
                 try {
                     FontAwareReportLoader fontLoader = new FontAwareReportLoader();
                     design = fontLoader.loadDesign(ctx, data);
+                    fixOrigins(design);
+                    // Force-add summary elements from raw XML if summary band is empty
+                    forceSummaryFromXml(design, data);
                     System.err.println("FontAwareReportLoader: design loaded");
                 } catch (Exception e) {
                     System.err.println("FontAwareReportLoader failed: " + e.getMessage());
@@ -106,11 +110,11 @@ public class RenderService {
                     System.err.println("Falling back to LegacyXmlLoader");
                     String xmlStr = new String(data, "UTF-8");
                     xmlStr = xmlStr.replaceAll("<queryString[^>]*>.*?</queryString>", "");
-                    xmlStr = xmlStr.replaceAll("<font[^>]*/>", "");
                     com.jaspersoft.jasperreports.legacy.xml.LegacyXmlLoader legacy = new com.jaspersoft.jasperreports.legacy.xml.LegacyXmlLoader();
                     java.util.Optional<JasperDesign> opt = legacy.loadReport(ctx, xmlStr.getBytes("UTF-8"));
                     if (opt.isPresent()) {
                         design = opt.get();
+                        fixOrigins(design);
                     }
                 }
 
@@ -301,6 +305,108 @@ public class RenderService {
             System.err.println("RENDER ERROR: " + sw.toString());
             throw e;
         }
+    }
+
+    private void forceSummaryFromXml(JasperDesign design, byte[] data) {
+        try {
+            String xml = new String(data, "UTF-8");
+            // Find <summary> section in raw XML
+            int summaryStart = xml.indexOf("<summary>");
+            int summaryEnd = xml.indexOf("</summary>");
+            if (summaryStart < 0 || summaryEnd < 0) return;
+            
+            String summaryXml = xml.substring(summaryStart, summaryEnd + 10);
+            // Extract summary elements using LegacyXmlLoader for just the summary
+            // Parse the summary section separately
+            String wrapper = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<jasperReport name=\"_summary_extract\" pageWidth=\"1191\" pageHeight=\"842\" whenNoDataType=\"AllSectionsNoDetail\">\n" +
+                "<field name=\"_dummy\" class=\"java.lang.String\"/>\n" +
+                summaryXml + "\n</jasperReport>";
+            
+            com.jaspersoft.jasperreports.legacy.xml.LegacyXmlLoader legacy = new com.jaspersoft.jasperreports.legacy.xml.LegacyXmlLoader();
+            java.util.Optional<JasperDesign> summaryDesign = legacy.loadReport(
+                DefaultJasperReportsContext.getInstance(), wrapper.getBytes("UTF-8"));
+            if (summaryDesign.isPresent()) {
+                java.lang.reflect.Method getSummary = summaryDesign.get().getClass().getMethod("getSummary");
+                JRDesignBand srcBand = (JRDesignBand) getSummary.invoke(summaryDesign.get());
+                if (srcBand != null && srcBand.getElements().length > 0) {
+                    java.lang.reflect.Method getTargetSummary = design.getClass().getMethod("getSummary");
+                    JRDesignBand targetBand = (JRDesignBand) getTargetSummary.invoke(design);
+                    if (targetBand != null) {
+                        targetBand.setHeight(srcBand.getHeight());
+                        for (JRElement elem : srcBand.getElements()) {
+                            targetBand.addElement(elem);
+                        }
+                        System.err.println("forceSummary: added " + srcBand.getElements().length + " elements, height=" + srcBand.getHeight());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("forceSummary: " + e.getMessage());
+        }
+    }
+
+    private void fixOrigins(JasperDesign design) {
+        // Try to fix summary band height from original XML (not available from parsed design)
+        // This is needed because JRXmlLoader (Jackson) may not set summary band height properly
+        try {
+            java.lang.reflect.Method getSummary = design.getClass().getMethod("getSummary");
+            JRDesignBand sb = (JRDesignBand) getSummary.invoke(design);
+            if (sb != null && sb.getHeight() == 0) {
+                sb.setHeight(520);
+                System.err.println("fixOrigins: forced summary height to 520");
+            }
+        } catch (Exception e) {
+            System.err.println("fixSummaryHeight: " + e.getMessage());
+        }
+        try {
+            java.lang.reflect.Method getDetail = design.getClass().getMethod("getDetailSection");
+            Object section = getDetail.invoke(design);
+            if (section != null) {
+                java.lang.reflect.Method getBands = section.getClass().getMethod("getBands");
+                JRBand[] bands = (JRBand[]) getBands.invoke(section);
+                if (bands != null) {
+                    JROrigin origin = new JROrigin(net.sf.jasperreports.engine.type.BandTypeEnum.DETAIL);
+                    for (JRBand band : bands) {
+                        if (band instanceof JRDesignBand) {
+                            java.lang.reflect.Method setOrigin = JRDesignBand.class.getDeclaredMethod("setOrigin", JROrigin.class);
+                            setOrigin.setAccessible(true);
+                            setOrigin.invoke(band, origin);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("fixDetailOrigin: " + e.getMessage());
+        }
+        try {
+            java.lang.reflect.Method getSummary = design.getClass().getMethod("getSummary");
+            JRDesignBand sb = (JRDesignBand) getSummary.invoke(design);
+            if (sb != null) {
+                java.lang.reflect.Method setOrigin = JRDesignBand.class.getDeclaredMethod("setOrigin", JROrigin.class);
+                setOrigin.setAccessible(true);
+                setOrigin.invoke(sb, new JROrigin(net.sf.jasperreports.engine.type.BandTypeEnum.SUMMARY));
+            }
+        } catch (Exception e) {}
+        try {
+            java.lang.reflect.Method getCH = design.getClass().getMethod("getColumnHeader");
+            JRDesignBand chb = (JRDesignBand) getCH.invoke(design);
+            if (chb != null) {
+                java.lang.reflect.Method setOrigin = JRDesignBand.class.getDeclaredMethod("setOrigin", JROrigin.class);
+                setOrigin.setAccessible(true);
+                setOrigin.invoke(chb, new JROrigin(net.sf.jasperreports.engine.type.BandTypeEnum.COLUMN_HEADER));
+            }
+        } catch (Exception e) {}
+        try {
+            java.lang.reflect.Method getTitle = design.getClass().getMethod("getTitle");
+            JRDesignBand tb = (JRDesignBand) getTitle.invoke(design);
+            if (tb != null) {
+                java.lang.reflect.Method setOrigin = JRDesignBand.class.getDeclaredMethod("setOrigin", JROrigin.class);
+                setOrigin.setAccessible(true);
+                setOrigin.invoke(tb, new JROrigin(net.sf.jasperreports.engine.type.BandTypeEnum.TITLE));
+            }
+        } catch (Exception e) {}
+        System.err.println("fixOrigins applied to all bands");
     }
 
     private String substituteParameters(String sql, Map<String, Object> params) {
