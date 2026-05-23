@@ -1,4 +1,4 @@
-FROM jrxml-renderer:test AS jar-extract
+FROM jrxml-renderer:test-fixed AS jar-extract
 FROM eclipse-temurin:21-jdk-alpine
 RUN mkdir -p /usr/share/fonts/custom /fonts && \
     apk add --no-cache fontconfig ttf-dejavu && \
