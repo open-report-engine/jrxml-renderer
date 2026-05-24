@@ -310,37 +310,81 @@ public class RenderService {
     private void forceSummaryFromXml(JasperDesign design, byte[] data) {
         try {
             String xml = new String(data, "UTF-8");
-            // Find <summary> section in raw XML
             int summaryStart = xml.indexOf("<summary>");
             int summaryEnd = xml.indexOf("</summary>");
             if (summaryStart < 0 || summaryEnd < 0) return;
             
-            String summaryXml = xml.substring(summaryStart, summaryEnd + 10);
-            // Extract summary elements using LegacyXmlLoader for just the summary
-            // Parse the summary section separately
-            String wrapper = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                "<jasperReport name=\"_summary_extract\" pageWidth=\"1191\" pageHeight=\"842\" whenNoDataType=\"AllSectionsNoDetail\">\n" +
-                "<field name=\"_dummy\" class=\"java.lang.String\"/>\n" +
-                summaryXml + "\n</jasperReport>";
+            String summarySection = xml.substring(summaryStart + 9, summaryEnd);
             
-            com.jaspersoft.jasperreports.legacy.xml.LegacyXmlLoader legacy = new com.jaspersoft.jasperreports.legacy.xml.LegacyXmlLoader();
-            java.util.Optional<JasperDesign> summaryDesign = legacy.loadReport(
-                DefaultJasperReportsContext.getInstance(), wrapper.getBytes("UTF-8"));
-            if (summaryDesign.isPresent()) {
-                java.lang.reflect.Method getSummary = summaryDesign.get().getClass().getMethod("getSummary");
-                JRDesignBand srcBand = (JRDesignBand) getSummary.invoke(summaryDesign.get());
-                if (srcBand != null && srcBand.getElements().length > 0) {
-                    java.lang.reflect.Method getTargetSummary = design.getClass().getMethod("getSummary");
-                    JRDesignBand targetBand = (JRDesignBand) getTargetSummary.invoke(design);
-                    if (targetBand != null) {
-                        targetBand.setHeight(srcBand.getHeight());
-                        for (JRElement elem : srcBand.getElements()) {
-                            targetBand.addElement(elem);
-                        }
-                        System.err.println("forceSummary: added " + srcBand.getElements().length + " elements, height=" + srcBand.getHeight());
+            // Extract band height
+            int bandHeight = 0;
+            java.util.regex.Matcher h = java.util.regex.Pattern.compile(
+                "<band[^>]*height=\"(\\d+)\"").matcher(summarySection);
+            if (h.find()) {
+                bandHeight = Integer.parseInt(h.group(1));
+            }
+            
+            // Find all <element> tags and convert to Jasper elements
+            java.lang.reflect.Method getSummary = design.getClass().getMethod("getSummary");
+            JRDesignBand targetBand = (JRDesignBand) getSummary.invoke(design);
+            if (targetBand == null) return;
+            
+            targetBand.setHeight(bandHeight);
+            
+            // Parse elements manually using simple XML pattern
+            java.util.regex.Matcher elemMatcher = java.util.regex.Pattern.compile(
+                "<element\\s+kind=\"(\\w+)\"\\s+[^>]*>.*?</element>",
+                java.util.regex.Pattern.DOTALL).matcher(summarySection);
+            
+            int count = 0;
+            while (elemMatcher.find()) {
+                String elemXml = elemMatcher.group();
+                String kind = elemMatcher.group(1);
+                
+                if ("staticText".equals(kind)) {
+                    // Extract text content
+                    java.util.regex.Matcher tm = java.util.regex.Pattern.compile(
+                        "<text><!\\[CDATA\\[(.*?)\\]\\]></text>", java.util.regex.Pattern.DOTALL)
+                        .matcher(elemXml);
+                    if (!tm.find()) continue;
+                    String text = tm.group(1);
+                    
+                    // Extract position & size
+                    int ex = 0, ey = 0, ew = 0, eh = 0;
+                    java.util.regex.Matcher pm = java.util.regex.Pattern.compile(
+                        "x=\"(\\d+)\"\\s+y=\"(\\d+)\"\\s+width=\"(\\d+)\"\\s+height=\"(\\d+)\"")
+                        .matcher(elemXml);
+                    if (pm.find()) {
+                        ex = Integer.parseInt(pm.group(1));
+                        ey = Integer.parseInt(pm.group(2));
+                        ew = Integer.parseInt(pm.group(3));
+                        eh = Integer.parseInt(pm.group(4));
                     }
+                    
+                    net.sf.jasperreports.engine.design.JRDesignStaticText st = 
+                        new net.sf.jasperreports.engine.design.JRDesignStaticText(design);
+                    st.setX(ex);
+                    st.setY(ey);
+                    st.setWidth(ew);
+                    st.setHeight(eh);
+                    st.setText(text);
+                    st.setFontName("DejaVu Sans Mono");
+                    st.setPdfFontName("DejaVu Sans Mono");
+                    st.setPdfEncoding("Identity-H");
+                    if (elemXml.contains("bold=\"true\"")) {
+                        st.setBold(Boolean.TRUE);
+                    }
+                    if (elemXml.contains("italic=\"true\"")) {
+                        st.setItalic(Boolean.TRUE);
+                    }
+                    if (elemXml.contains("underline=\"true\"")) {
+                        st.setUnderline(Boolean.TRUE);
+                    }
+                    targetBand.addElement(st);
+                    count++;
                 }
             }
+            System.err.println("forceSummary: added " + count + " elements, height=" + bandHeight);
         } catch (Exception e) {
             System.err.println("forceSummary: " + e.getMessage());
         }
