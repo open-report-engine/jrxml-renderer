@@ -212,10 +212,26 @@ public class RenderService {
                         com.fasterxml.jackson.databind.JsonNode val = row.get(field.getName());
                         if (val == null) return null;
                         if (val.isTextual()) return val.asText();
-                        if (val.isInt()) return val.asInt();
-                        if (val.isLong()) return val.asLong();
-                        if (val.isDouble()) return val.asDouble();
                         if (val.isBoolean()) return val.asBoolean();
+                        if (val.isNumber()) {
+                            Class<?> fieldClass = field.getValueClass();
+                            if (fieldClass == Double.class || fieldClass == double.class) {
+                                return val.asDouble();
+                            }
+                            if (fieldClass == Long.class || fieldClass == long.class) {
+                                return val.asLong();
+                            }
+                            if (fieldClass == Integer.class || fieldClass == int.class) {
+                                return val.asInt();
+                            }
+                            if (fieldClass == Float.class || fieldClass == float.class) {
+                                return (float) val.asDouble();
+                            }
+                            if (fieldClass == Number.class) {
+                                return val.asDouble();
+                            }
+                            return val.asDouble();
+                        }
                         return val.asText();
                     }
                 };
