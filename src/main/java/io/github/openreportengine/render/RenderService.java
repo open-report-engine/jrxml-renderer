@@ -32,6 +32,8 @@ import java.util.logging.Logger;
 
 public class RenderService {
 
+    private static final File DEBUG_FLAG = new File("/tmp/debug_trace_enabled");
+
     static {
         System.setProperty("net.sf.jasperreports.awt.ignore.missing.font", "true");
         System.setProperty("net.sf.jasperreports.default.pdf.font.name", FontDefaults.FAMILY);
@@ -77,6 +79,13 @@ public class RenderService {
     }
 
     public ByteArrayOutputStream render(RenderRequest request) throws Exception {
+        if (DEBUG_FLAG.exists()) {
+            log.log(Level.INFO, "DEBUG RENDER: format=" + request.format
+                + ", jrxml_size=" + (request.jrxml != null ? request.jrxml.length() : 0)
+                + ", jasperBase64_size=" + (request.jasperBase64 != null ? request.jasperBase64.length() : 0)
+                + ", inline_data=" + (request.inlineData != null ? request.inlineData.toString() : "null")
+                + ", parameters=" + (request.parameters != null ? request.parameters.toString() : "null"));
+        }
         try {
             JasperReportsContext ctx = DefaultJasperReportsContext.getInstance();
 
