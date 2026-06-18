@@ -49,6 +49,8 @@
             <groupId>io.github.open-report-engine</groupId>
             <artifactId>ljp</artifactId>
             <version>7.0.6</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/ljp-7.0.6.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>commons-digester</groupId>
