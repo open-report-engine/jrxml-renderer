@@ -102,6 +102,7 @@ public class RenderService {
                 System.err.println("Report loaded: " + jasperReport.getName());
             } else {
                 byte[] data = request.jrxml.getBytes("UTF-8");
+                System.err.println("JRXML preview: " + (request.jrxml.length() > 200 ? request.jrxml.substring(0, 200) : request.jrxml));
 
                 // Try FontAwareReportLoader first (DOM parser with Arial support)
                 JasperDesign design = null;
