@@ -45,12 +45,6 @@
             <artifactId>jasperreports-excel-poi</artifactId>
             <version>${jasperreports.version}</version>
         </dependency>
-        <!-- #454: LegacyXmlLoader for old JRXML templates (verification_certificate) -->
-        <dependency>
-            <groupId>net.sf.jasperreports</groupId>
-            <artifactId>jasperreports-legacy-xml</artifactId>
-            <version>${jasperreports.version}</version>
-        </dependency>
         <dependency>
             <groupId>io.github.open-report-engine</groupId>
             <artifactId>ljp</artifactId>

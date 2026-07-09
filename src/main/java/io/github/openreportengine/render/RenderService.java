@@ -114,16 +114,14 @@ public class RenderService {
                     System.err.println("FontAwareReportLoader failed: " + e.getMessage());
                 }
 
-                // Fallback to LegacyXmlLoader if FontAware failed
+                // Fallback to JRXmlLoader if FontAware failed
                 if (design == null) {
-                    System.err.println("Falling back to LegacyXmlLoader");
-                    String xmlStr = new String(data, "UTF-8");
-                    xmlStr = xmlStr.replaceAll("<queryString[^>]*>.*?</queryString>", "");
-                    com.jaspersoft.jasperreports.legacy.xml.LegacyXmlLoader legacy = new com.jaspersoft.jasperreports.legacy.xml.LegacyXmlLoader();
-                    java.util.Optional<JasperDesign> opt = legacy.loadReport(ctx, xmlStr.getBytes("UTF-8"));
-                    if (opt.isPresent()) {
-                        design = opt.get();
+                    System.err.println("Falling back to JRXmlLoader");
+                    try {
+                        design = net.sf.jasperreports.engine.xml.JRXmlLoader.load(ctx, new java.io.ByteArrayInputStream(data));
                         fixOrigins(design);
+                    } catch (Exception e2) {
+                        System.err.println("JRXmlLoader also failed: " + e2.getMessage());
                     }
                 }
 
@@ -225,6 +223,31 @@ public class RenderService {
                         if (val.isLong()) return val.asLong();
                         if (val.isDouble()) return val.asDouble();
                         if (val.isBoolean()) return val.asBoolean();
+<<<<<<< Updated upstream
+=======
+                        if (val.isNumber()) {
+                            Class<?> fieldClass = field.getValueClass();
+                            if (fieldClass == String.class) {
+                                return val.asText();
+                            }
+                            if (fieldClass == Double.class || fieldClass == double.class) {
+                                return val.asDouble();
+                            }
+                            if (fieldClass == Long.class || fieldClass == long.class) {
+                                return val.asLong();
+                            }
+                            if (fieldClass == Integer.class || fieldClass == int.class) {
+                                return val.asInt();
+                            }
+                            if (fieldClass == Float.class || fieldClass == float.class) {
+                                return (float) val.asDouble();
+                            }
+                            if (fieldClass == Number.class) {
+                                return val.asDouble();
+                            }
+                            return val.asText();
+                        }
+>>>>>>> Stashed changes
                         return val.asText();
                     }
                 };
