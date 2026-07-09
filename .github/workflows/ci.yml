@@ -27,8 +27,7 @@ jobs:
       run: mvn clean package -DskipTests
       
     - name: Upload JAR
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: jrxml-renderer
         path: target/jrxml-renderer.jar
-        if-no-files-found: error
