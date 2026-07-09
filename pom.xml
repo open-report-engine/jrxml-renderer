@@ -39,6 +39,13 @@
             <groupId>net.sf.jasperreports</groupId>
             <artifactId>jasperreports-pdf</artifactId>
             <version>${jasperreports.version}</version>
+
+        <!-- Legacy XML loader for old JRXML format -->
+        <dependency>
+            <groupId>net.sf.jasperreports</groupId>
+            <artifactId>jasperreports-legacy-xml</artifactId>
+            <version>${jasperreports.version}</version>
+        </dependency>
         </dependency>
         <dependency>
             <groupId>net.sf.jasperreports</groupId>
