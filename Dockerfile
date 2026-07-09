@@ -1,9 +1,12 @@
 FROM eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /app
+RUN apk add --no-cache maven
 COPY pom.xml .
 COPY lib/ lib/
+RUN mvn install:install-file -Dfile=lib/ljp-7.0.6.jar -DgroupId=io.github.open-report-engine -DartifactId=ljp -Dversion=7.0.6 -Dpackaging=jar
+RUN mvn dependency:resolve
 COPY src/ src/
-RUN apk add --no-cache maven && mvn clean package -DskipTests
+RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:21-jdk-alpine
 RUN mkdir -p /usr/share/fonts/custom /fonts && \
