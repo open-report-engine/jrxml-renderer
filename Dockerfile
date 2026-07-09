@@ -10,10 +10,6 @@ RUN mkdir -p /usr/share/fonts/custom /fonts && \
     apk add --no-cache fontconfig ttf-dejavu && \
     rm -rf /var/cache/apk/* /tmp/*
 COPY --from=builder /app/target/jrxml-renderer.jar /app/jrxml-renderer.jar
-COPY Carlito-Bold.ttf /app/ 2>/dev/null || true
-COPY Carlito-Regular.ttf /app/ 2>/dev/null || true
-COPY Carlito-Italic.ttf /app/ 2>/dev/null || true
-COPY Carlito-BoldItalic.ttf /app/ 2>/dev/null || true
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 WORKDIR /app
