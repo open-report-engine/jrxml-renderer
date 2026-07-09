@@ -19,6 +19,7 @@ import net.sf.jasperreports.export.SimpleWriterExporterOutput;
 import javax.sql.DataSource;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.Connection;
@@ -32,6 +33,7 @@ import java.util.logging.Logger;
 
 public class RenderService {
 
+    private static final Logger log = Logger.getLogger(RenderService.class.getName());
     private static final File DEBUG_FLAG = new File("/tmp/debug_trace_enabled");
 
     static {
